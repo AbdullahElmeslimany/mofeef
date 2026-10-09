@@ -38,7 +38,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    final success = await ref.read(authProvider.notifier).login(email, password);
+    final success =
+        await ref.read(authProvider.notifier).login(email, password);
     if (success && mounted) {
       context.go('/home');
     } else if (mounted) {
@@ -73,7 +74,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Image.asset(
                     'assets/images/home_hero_bg.jpg',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: const Color(0xFF0F1B26)),
+                    errorBuilder: (_, __, ___) =>
+                        Container(color: const Color(0xFF0F1B26)),
                   ),
                 ),
 
@@ -85,9 +87,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          const Color(0xFF1B4E4A).withOpacity(0.70), // Turquoise top
+                          const Color(0xFF1B4E4A)
+                              .withOpacity(0.70), // Turquoise top
                           const Color(0xFF09141D).withOpacity(0.60),
-                          const Color(0xFF071018).withOpacity(0.98), // Solid bottom blend
+                          const Color(0xFF071018)
+                              .withOpacity(0.98), // Solid bottom blend
                         ],
                         stops: const [0.0, 0.5, 1.0],
                       ),
@@ -98,7 +102,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Top Header Content
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -112,7 +117,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               shape: BoxShape.circle,
                               color: const Color(0xFF131D26).withOpacity(0.85),
                               border: Border.all(
-                                color: const Color(0xFFF5A623).withOpacity(0.35),
+                                color:
+                                    const Color(0xFFF5A623).withOpacity(0.35),
                                 width: 1.5,
                               ),
                               boxShadow: [
@@ -149,10 +155,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               letterSpacing: 0.3,
                             ),
                             children: [
-                              TextSpan(text: isAr ? 'أهلاً بك في ' : 'Welcome to '),
+                              TextSpan(
+                                  text: isAr ? 'أهلاً بك في ' : 'Welcome to '),
                               TextSpan(
                                 text: isAr ? 'مُضيف' : 'Modeefe',
-                                style: const TextStyle(color: Color(0xFFF5A623)),
+                                style:
+                                    const TextStyle(color: Color(0xFFF5A623)),
                               ),
                             ],
                           ),
@@ -161,7 +169,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         // Subtitle: "ابدأ رحلتك السعودية الفاخرة"
                         Text(
-                          isAr ? 'ابدأ رحلتك السعودية الفاخرة' : 'Start your luxury Saudi journey',
+                          isAr
+                              ? 'ابدأ رحلتك السعودية الفاخرة'
+                              : 'Start your luxury Saudi journey',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -186,7 +196,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF0B141E),
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFF1E3246), width: 1.2),
+                  border:
+                      Border.all(color: const Color(0xFF1E3246), width: 1.2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.5),
@@ -279,7 +290,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       icon: Icons.lock_outline_rounded,
                       isPassword: true,
                       obscureText: _obscurePassword,
-                      onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onToggleVisibility: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _handleLogin(),
                     ),
@@ -288,18 +300,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     // Forgot Password Link
                     Align(
-                      alignment: isAr ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment:
+                          isAr ? Alignment.centerRight : Alignment.centerLeft,
                       child: TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(isAr ? 'يرجى التواصل مع الدعم الفني لاستعادة كلمة المرور' : 'Please contact support to reset your password'),
-                              backgroundColor: AppColors.card,
-                            ),
-                          );
-                        },
+                        onPressed: () => context.push('/forgot-password'),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 4),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -365,7 +372,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: Divider(color: const Color(0xFF1E3246).withOpacity(0.8), thickness: 1),
+                          child: Divider(
+                              color: const Color(0xFF1E3246).withOpacity(0.8),
+                              thickness: 1),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -379,7 +388,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         Expanded(
-                          child: Divider(color: const Color(0xFF1E3246).withOpacity(0.8), thickness: 1),
+                          child: Divider(
+                              color: const Color(0xFF1E3246).withOpacity(0.8),
+                              thickness: 1),
                         ),
                       ],
                     ),
@@ -387,56 +398,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 18),
 
                     // Google Login Button
-                    Container(
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0E1A26),
-                        borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: const Color(0xFF1E3246)),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('تسجيل الدخول عبر Google متاح قريباً'),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(25),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'G',
-                                  style: TextStyle(
-                                    color: Color(0xFFEA4335),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              isAr ? 'المتابعة عبر Google' : 'Continue with Google',
-                              style: const TextStyle(
-                                color: Color(0xFFE2E8F0),
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    // Container(
+                    //   height: 50,
+                    //   decoration: BoxDecoration(
+                    //     color: const Color(0xFF0E1A26),
+                    //     borderRadius: BorderRadius.circular(25),
+                    //     border: Border.all(color: const Color(0xFF1E3246)),
+                    //   ),
+                    //   child: InkWell(
+                    //     onTap: () {
+                    //       ScaffoldMessenger.of(context).showSnackBar(
+                    //         const SnackBar(
+                    //           content: Text('تسجيل الدخول عبر Google متاح قريباً'),
+                    //         ),
+                    //       );
+                    //     },
+                    //     borderRadius: BorderRadius.circular(25),
+                    //     child: Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         Container(
+                    //           width: 22,
+                    //           height: 22,
+                    //           decoration: const BoxDecoration(
+                    //             shape: BoxShape.circle,
+                    //             color: Colors.white,
+                    //           ),
+                    //           child: const Center(
+                    //             child: Text(
+                    //               'G',
+                    //               style: TextStyle(
+                    //                 color: Color(0xFFEA4335),
+                    //                 fontWeight: FontWeight.w900,
+                    //                 fontSize: 14,
+                    //               ),
+                    //             ),
+                    //           ),
+                    //         ),
+                    //         const SizedBox(width: 10),
+                    //         Text(
+                    //           isAr ? 'المتابعة عبر Google' : 'Continue with Google',
+                    //           style: const TextStyle(
+                    //             color: Color(0xFFE2E8F0),
+                    //             fontSize: 13.5,
+                    //             fontWeight: FontWeight.w600,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
 
                     const SizedBox(height: 16),
 
@@ -580,29 +591,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               suffixIcon: isPassword
                   ? IconButton(
                       icon: Icon(
-                        obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        obscureText
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: const Color(0xFF8A9BB0),
                         size: 20,
                       ),
                       onPressed: onToggleVisibility,
                     )
                   : null,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFF1E3246), width: 1.2),
+                borderSide:
+                    const BorderSide(color: Color(0xFF1E3246), width: 1.2),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFFF5A623), width: 1.6),
+                borderSide:
+                    const BorderSide(color: Color(0xFFF5A623), width: 1.6),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
+                borderSide:
+                    const BorderSide(color: AppColors.error, width: 1.2),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.6),
+                borderSide:
+                    const BorderSide(color: AppColors.error, width: 1.6),
               ),
             ),
           ),

@@ -134,7 +134,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.65,
+                    childAspectRatio: 0.58,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
                   ),

@@ -528,31 +528,42 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Availability & Free Consultation Switches
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.card,
+        Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            side: const BorderSide(color: AppColors.border),
           ),
-          child: Column(
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF34D399),
-                title: Text(isAr ? 'متاح للحجز الفوري (is_available)' : 'Available for Booking', style: AppTypography.titleSmall.copyWith(fontSize: 13)),
-                value: _guideOnlyAvailable,
-                onChanged: (val) => setModalState(() => _guideOnlyAvailable = val),
-              ),
-              const Divider(color: AppColors.border, height: 1),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFF34D399),
-                title: Text(isAr ? 'يقدم استشارة مجانية (free_consultation)' : 'Offers Free Consultation', style: AppTypography.titleSmall.copyWith(fontSize: 13)),
-                value: _guideFreeConsultation,
-                onChanged: (val) => setModalState(() => _guideFreeConsultation = val),
-              ),
-            ],
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: const Color(0xFF34D399),
+                  title: Text(isAr
+                      ? 'متاح للحجز الفوري (is_available)'
+                      : 'Available for Booking',
+                      style: AppTypography.titleSmall.copyWith(fontSize: 13)),
+                  value: _guideOnlyAvailable,
+                  onChanged: (val) =>
+                      setModalState(() => _guideOnlyAvailable = val),
+                ),
+                const Divider(color: AppColors.border, height: 1),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: const Color(0xFF34D399),
+                  title: Text(isAr
+                      ? 'يقدم استشارة مجانية (free_consultation)'
+                      : 'Offers Free Consultation',
+                      style: AppTypography.titleSmall.copyWith(fontSize: 13)),
+                  value: _guideFreeConsultation,
+                  onChanged: (val) =>
+                      setModalState(() => _guideFreeConsultation = val),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -762,31 +773,40 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         ),
         const SizedBox(height: 16),
 
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.card,
+        Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            side: const BorderSide(color: AppColors.border),
           ),
-          child: Column(
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFFFB923C),
-                title: Text(isAr ? 'العروض والتخفيضات (on_sale=1)' : 'On Sale Only', style: AppTypography.titleSmall.copyWith(fontSize: 13)),
-                value: _productOnlyOnSale,
-                onChanged: (val) => setModalState(() => _productOnlyOnSale = val),
-              ),
-              const Divider(color: AppColors.border, height: 1),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeColor: const Color(0xFFFB923C),
-                title: Text(isAr ? 'المتوفر في المخزون فقط' : 'In-Stock Only', style: AppTypography.titleSmall.copyWith(fontSize: 13)),
-                value: _productOnlyInStock,
-                onChanged: (val) => setModalState(() => _productOnlyInStock = val),
-              ),
-            ],
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: const Color(0xFFFB923C),
+                  title: Text(isAr
+                      ? 'العروض والتخفيضات (on_sale=1)'
+                      : 'On Sale Only',
+                      style: AppTypography.titleSmall.copyWith(fontSize: 13)),
+                  value: _productOnlyOnSale,
+                  onChanged: (val) =>
+                      setModalState(() => _productOnlyOnSale = val),
+                ),
+                const Divider(color: AppColors.border, height: 1),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: const Color(0xFFFB923C),
+                  title: Text(isAr ? 'المتوفر في المخزون فقط' : 'In-Stock Only',
+                      style: AppTypography.titleSmall.copyWith(fontSize: 13)),
+                  value: _productOnlyInStock,
+                  onChanged: (val) =>
+                      setModalState(() => _productOnlyInStock = val),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 16),

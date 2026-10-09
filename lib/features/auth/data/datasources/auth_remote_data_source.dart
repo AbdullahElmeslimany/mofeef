@@ -12,6 +12,8 @@ abstract class AuthRemoteDataSource {
   Future<void> updateProfile(Map<String, dynamic> data);
   Future<void> changePassword(String currentPassword, String newPassword);
   Future<void> logout();
+  Future<void> deleteAccount();
+  Future<void> forgotPassword(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -106,6 +108,45 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await _dio.post(ApiEndpoints.logout);
     } catch (_) {}
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      final response = await _dio.delete(ApiEndpoints.deleteAccount);
+      _checkDeleteStatus(response.data);
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      if (statusCode != 405 && statusCode != 404) rethrow;
+      final response = await _dio.post(ApiEndpoints.deleteAccount);
+      _checkDeleteStatus(response.data);
+    }
+  }
+
+  void _checkDeleteStatus(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final status = data['status'];
+      final msg = data['message']?.toString();
+      if (status == 0 || status == false) {
+        throw ServerFailure(msg ?? 'فشل حذف الحساب، يرجى المحاولة لاحقاً');
+      }
+    }
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    final response = await _dio.post(
+      ApiEndpoints.forgotPassword,
+      data: {'email': email},
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final status = data['status'];
+      final msg = data['message']?.toString();
+      if (status == 0 || status == false) {
+        throw ServerFailure(msg ?? 'فشل إرسال رابط استعادة كلمة المرور');
+      }
+    }
   }
 }
 

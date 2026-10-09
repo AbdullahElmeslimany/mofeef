@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
+import '../auth/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -11,7 +12,8 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -56,7 +58,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     await Future.delayed(const Duration(milliseconds: 750));
     if (!mounted || _navigated) return;
     _navigated = true;
-    context.go('/home');
+
+    await ref.read(authProvider.notifier).checkAuthStatus();
+    if (!mounted) return;
+
+    final isAuthenticated = ref.read(authProvider).isAuthenticated;
+    context.go(isAuthenticated ? '/home' : '/login');
   }
 
   @override
@@ -85,7 +92,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
               'assets/images/splash_bg.jpg',
               fit: BoxFit.cover,
               alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => Container(color: const Color(0xFF070E16)),
+              errorBuilder: (_, __, ___) =>
+                  Container(color: const Color(0xFF070E16)),
             ),
           ),
 
@@ -126,7 +134,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                       child: const LinearProgressIndicator(
                         minHeight: 2.5,
                         backgroundColor: Color(0x33FFFFFF),
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.primaryGold),
                       ),
                     ),
                   ),

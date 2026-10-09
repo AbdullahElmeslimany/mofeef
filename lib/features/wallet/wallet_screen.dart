@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/localization/locale_provider.dart';
+import '../../core/payment/moyasar_payment_manager.dart';
 import '../../core/widgets/custom_button.dart';
 import '../auth/auth_provider.dart';
 
@@ -47,10 +48,13 @@ class WalletNotifier extends StateNotifier<WalletState> {
 
   void addFunds(double amount, String paymentMethod, bool isAr) {
     final now = DateTime.now();
-    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final dateStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final newTx = WalletTransaction(
       id: 'TX-${DateTime.now().millisecondsSinceEpoch}',
-      title: isAr ? 'شحن رصيد المحفظة ($paymentMethod)' : 'Wallet Top-up ($paymentMethod)',
+      title: isAr
+          ? 'شحن رصيد المحفظة ($paymentMethod)'
+          : 'Wallet Top-up ($paymentMethod)',
       date: dateStr,
       amount: amount,
       isCredit: true,
@@ -63,7 +67,8 @@ class WalletNotifier extends StateNotifier<WalletState> {
   }
 }
 
-final walletProvider = StateNotifierProvider<WalletNotifier, WalletState>((ref) {
+final walletProvider =
+    StateNotifierProvider<WalletNotifier, WalletState>((ref) {
   return WalletNotifier();
 });
 
@@ -72,7 +77,8 @@ class WalletScreen extends ConsumerWidget {
 
   void _showTopUpModal(BuildContext context, WidgetRef ref, bool isAr) {
     double selectedAmount = 100.0;
-    String selectedMethod = 'Apple Pay';
+    String selectedMethod = 'Moyasar';
+    bool isProcessing = false;
 
     showModalBottomSheet(
       context: context,
@@ -83,16 +89,19 @@ class WalletScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
+        builder: (sheetContext, setModalState) {
           final amounts = [50.0, 100.0, 250.0, 500.0, 1000.0];
-          final methods = ['Apple Pay', 'مدى (Mada)', 'Visa / MasterCard', 'stc pay'];
+          final methods = [
+            'Moyasar'
+            // , 'Apple Pay'
+          ];
 
           return Padding(
             padding: EdgeInsets.only(
               left: 20,
               right: 20,
               top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -102,7 +111,9 @@ class WalletScreen extends ConsumerWidget {
                   child: Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -113,7 +124,8 @@ class WalletScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
 
                 // Amount Selection
-                Text(isAr ? 'اختر المبلغ (﷼)' : 'Select Amount (﷼)', style: AppTypography.titleSmall),
+                Text(isAr ? 'اختر المبلغ (﷼)' : 'Select Amount (﷼)',
+                    style: AppTypography.titleSmall),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -123,11 +135,13 @@ class WalletScreen extends ConsumerWidget {
                     return ChoiceChip(
                       label: Text('${amt.toInt()} ﷼'),
                       selected: isSel,
-                      onSelected: (val) => setModalState(() => selectedAmount = amt),
+                      onSelected: (val) =>
+                          setModalState(() => selectedAmount = amt),
                       selectedColor: AppColors.primaryGold,
                       backgroundColor: AppColors.card,
                       labelStyle: TextStyle(
-                        color: isSel ? AppColors.textDark : AppColors.textPrimary,
+                        color:
+                            isSel ? AppColors.textDark : AppColors.textPrimary,
                         fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                       ),
                     );
@@ -136,23 +150,29 @@ class WalletScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
 
                 // Payment Method
-                Text(isAr ? 'طريقة الدفع' : 'Payment Method', style: AppTypography.titleSmall),
+                Text(isAr ? 'طريقة الدفع' : 'Payment Method',
+                    style: AppTypography.titleSmall),
                 const SizedBox(height: 10),
                 ...methods.map((method) {
                   final isSel = selectedMethod == method;
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
+                  return Material(
+                    color: AppColors.card,
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: isSel ? AppColors.primaryGold : AppColors.border),
+                      side: BorderSide(
+                          color:
+                              isSel ? AppColors.primaryGold : AppColors.border),
                     ),
+                    clipBehavior: Clip.antiAlias,
                     child: RadioListTile<String>(
-                      title: Text(method, style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                      title: Text(method,
+                          style:
+                              AppTypography.titleSmall.copyWith(fontSize: 14)),
                       value: method,
                       groupValue: selectedMethod,
                       activeColor: AppColors.primaryGold,
-                      onChanged: (val) => setModalState(() => selectedMethod = val!),
+                      onChanged: (val) =>
+                          setModalState(() => selectedMethod = val!),
                     ),
                   );
                 }),
@@ -161,15 +181,50 @@ class WalletScreen extends ConsumerWidget {
                 // Confirm button
                 CustomButton(
                   text: isAr ? 'تأكيد وشحن الرصيد' : 'Confirm & Top Up',
-                  onPressed: () {
-                    ref.read(walletProvider.notifier).addFunds(selectedAmount, selectedMethod, isAr);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(isAr ? 'تم شحن المحفظة بنجاح بمبلغ ${selectedAmount.toInt()} ﷼' : 'Successfully added ${selectedAmount.toInt()} ﷼ to wallet'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
+                  isLoading: isProcessing,
+                  onPressed: () async {
+                    setModalState(() => isProcessing = true);
+                    final payment =
+                        await ref.read(moyasarPaymentManagerProvider).start(
+                              context: context,
+                              amount: selectedAmount,
+                              isAr: isAr,
+                              description: isAr
+                                  ? 'شحن رصيد محفظة مديف'
+                                  : 'Modeef wallet top-up',
+                            );
+                    if (!context.mounted) return;
+                    setModalState(() => isProcessing = false);
+
+                    if (payment.isPaid) {
+                      ref.read(walletProvider.notifier).addFunds(
+                            selectedAmount,
+                            selectedMethod,
+                            isAr,
+                          );
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isAr
+                                ? 'تم شحن المحفظة بنجاح بمبلغ ${selectedAmount.toInt()} ﷼'
+                                : 'Successfully added ${selectedAmount.toInt()} ﷼ to wallet',
+                          ),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    } else if (payment.status == MoyasarPaymentStatus.failed) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isAr
+                                ? 'لم يكتمل الدفع. لم يتم شحن المحفظة.'
+                                : 'Payment was not completed. Wallet was not topped up.',
+                          ),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
                   },
                 ),
               ],
@@ -187,11 +242,13 @@ class WalletScreen extends ConsumerWidget {
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
 
-    final userName = authState.user?.displayName ?? (isAr ? 'ضيف مُضيف' : 'Modeefe Guest');
+    final userName =
+        authState.user?.displayName ?? (isAr ? 'ضيف مُضيف' : 'Modeefe Guest');
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isAr ? 'المحفظة الرقمية' : 'Digital Wallet', style: AppTypography.headingSmall),
+        title: Text(isAr ? 'المحفظة الرقمية' : 'Digital Wallet',
+            style: AppTypography.headingSmall),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -210,9 +267,13 @@ class WalletScreen extends ConsumerWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.primaryGold.withOpacity(0.4)),
+                border:
+                    Border.all(color: AppColors.primaryGold.withOpacity(0.4)),
                 boxShadow: const [
-                  BoxShadow(color: AppColors.goldGlow, blurRadius: 20, offset: Offset(0, 6)),
+                  BoxShadow(
+                      color: AppColors.goldGlow,
+                      blurRadius: 20,
+                      offset: Offset(0, 6)),
                 ],
               ),
               child: Column(
@@ -221,16 +282,21 @@ class WalletScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(userName, style: AppTypography.bodySmall.copyWith(color: AppColors.primaryGold)),
-                      const Icon(Icons.account_balance_wallet, color: AppColors.primaryGold, size: 24),
+                      Text(userName,
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.primaryGold)),
+                      const Icon(Icons.account_balance_wallet,
+                          color: AppColors.primaryGold, size: 24),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(isAr ? 'الرصيد المتاح' : 'Available Balance', style: AppTypography.bodySmall),
+                  Text(isAr ? 'الرصيد المتاح' : 'Available Balance',
+                      style: AppTypography.bodySmall),
                   const SizedBox(height: 4),
                   Text(
                     '${walletState.balance.toStringAsFixed(2)} ﷼',
-                    style: AppTypography.headingLarge.copyWith(color: AppColors.primaryGold, fontSize: 32),
+                    style: AppTypography.headingLarge
+                        .copyWith(color: AppColors.primaryGold, fontSize: 32),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -252,7 +318,9 @@ class WalletScreen extends ConsumerWidget {
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(isAr ? 'يمكنك اختيار الدفع عبر المحفظة مباشرة في شاشات الحجز' : 'You can choose Wallet Payment at checkout'),
+                                content: Text(isAr
+                                    ? 'يمكنك اختيار الدفع عبر المحفظة مباشرة في شاشات الحجز'
+                                    : 'You can choose Wallet Payment at checkout'),
                               ),
                             );
                           },
@@ -266,7 +334,8 @@ class WalletScreen extends ConsumerWidget {
             const SizedBox(height: 28),
 
             // Transactions Header
-            Text(isAr ? 'سجل العمليات والتحويلات' : 'Transaction History', style: AppTypography.titleLarge),
+            Text(isAr ? 'سجل العمليات والتحويلات' : 'Transaction History',
+                style: AppTypography.titleLarge),
             const SizedBox(height: 12),
 
             if (walletState.transactions.isEmpty)
@@ -280,16 +349,23 @@ class WalletScreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.receipt_long_outlined, color: AppColors.textMuted, size: 48),
+                    const Icon(Icons.receipt_long_outlined,
+                        color: AppColors.textMuted, size: 48),
                     const SizedBox(height: 12),
                     Text(
-                      isAr ? 'لا توجد عمليات سابقة في المحفظة' : 'No previous transactions found',
-                      style: AppTypography.titleSmall.copyWith(color: AppColors.textMuted),
+                      isAr
+                          ? 'لا توجد عمليات سابقة في المحفظة'
+                          : 'No previous transactions found',
+                      style: AppTypography.titleSmall
+                          .copyWith(color: AppColors.textMuted),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isAr ? 'ستظهر هنا كافة عمليات الشحن والمدفوعات فور إجرائها' : 'All top-ups and booking payments will appear here',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted, fontSize: 11),
+                      isAr
+                          ? 'ستظهر هنا كافة عمليات الشحن والمدفوعات فور إجرائها'
+                          : 'All top-ups and booking payments will appear here',
+                      style: AppTypography.bodySmall
+                          .copyWith(color: AppColors.textMuted, fontSize: 11),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -312,12 +388,18 @@ class WalletScreen extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: tx.isCredit ? AppColors.success.withOpacity(0.15) : AppColors.surface,
+                                color: tx.isCredit
+                                    ? AppColors.success.withOpacity(0.15)
+                                    : AppColors.surface,
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                                color: tx.isCredit ? AppColors.success : AppColors.primaryGold,
+                                tx.isCredit
+                                    ? Icons.arrow_downward
+                                    : Icons.arrow_upward,
+                                color: tx.isCredit
+                                    ? AppColors.success
+                                    : AppColors.primaryGold,
                                 size: 18,
                               ),
                             ),
@@ -327,7 +409,9 @@ class WalletScreen extends ConsumerWidget {
                               children: [
                                 Text(tx.title, style: AppTypography.titleSmall),
                                 const SizedBox(height: 2),
-                                Text(tx.date, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
+                                Text(tx.date,
+                                    style: AppTypography.bodySmall
+                                        .copyWith(fontSize: 11)),
                               ],
                             ),
                           ],
@@ -335,7 +419,9 @@ class WalletScreen extends ConsumerWidget {
                         Text(
                           '${tx.isCredit ? '+' : '-'}${tx.amount.toStringAsFixed(0)} ﷼',
                           style: TextStyle(
-                            color: tx.isCredit ? AppColors.success : AppColors.error,
+                            color: tx.isCredit
+                                ? AppColors.success
+                                : AppColors.error,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),

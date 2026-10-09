@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_screen.dart';
+import '../../features/auth/forgot_password_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/discovery/discovery_screen.dart';
 import '../../features/booking/my_reservations_screen.dart';
@@ -52,6 +53,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

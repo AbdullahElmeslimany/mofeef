@@ -15,7 +15,8 @@ import '../tours/data/repositories/tour_repository.dart';
 import '../../core/utils/share_helper.dart';
 import '../wishlist/data/wishlist_repository.dart';
 
-final tourDetailProvider = FutureProvider.family<TourModel, String>((ref, id) async {
+final tourDetailProvider =
+    FutureProvider.family<TourModel, String>((ref, id) async {
   return ref.watch(tourRepositoryProvider).getTourDetail(id);
 });
 
@@ -25,10 +26,12 @@ class ExperienceDetailsScreen extends ConsumerStatefulWidget {
   const ExperienceDetailsScreen({super.key, required this.experienceId});
 
   @override
-  ConsumerState<ExperienceDetailsScreen> createState() => _ExperienceDetailsScreenState();
+  ConsumerState<ExperienceDetailsScreen> createState() =>
+      _ExperienceDetailsScreenState();
 }
 
-class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScreen> {
+class _ExperienceDetailsScreenState
+    extends ConsumerState<ExperienceDetailsScreen> {
   int _currentGalleryIndex = 0;
   final PageController _pageController = PageController();
 
@@ -41,7 +44,8 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
   Future<void> _openMap(TourModel tour) async {
     final lat = tour.mapLat ?? 21.4689868;
     final lng = tour.mapLng ?? 39.8279215;
-    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final url =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -60,7 +64,11 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
         data: (tour) {
           final images = tour.gallery.isNotEmpty
               ? tour.gallery
-              : (tour.imageUrl != null ? [tour.imageUrl!] : ['https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80']);
+              : (tour.imageUrl != null
+                  ? [tour.imageUrl!]
+                  : [
+                      'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80'
+                    ]);
 
           return Stack(
             children: [
@@ -76,18 +84,21 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                       child: CircleAvatar(
                         backgroundColor: Colors.black.withOpacity(0.55),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
                           onPressed: () => context.pop(),
                         ),
                       ),
                     ),
                     actions: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8.0, horizontal: 4.0),
                         child: CircleAvatar(
                           backgroundColor: Colors.black.withOpacity(0.55),
                           child: IconButton(
-                            icon: const Icon(Icons.share_outlined, color: Colors.white, size: 20),
+                            icon: const Icon(Icons.share_outlined,
+                                color: Colors.white, size: 20),
                             onPressed: () {
                               ShareHelper.shareItem(
                                 context: context,
@@ -108,32 +119,48 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           backgroundColor: Colors.black.withOpacity(0.55),
                           child: IconButton(
                             icon: Icon(
-                              ref.watch(wishlistProvider).isFavorite(widget.experienceId, 'tour')
+                              ref
+                                      .watch(wishlistProvider)
+                                      .isFavorite(widget.experienceId, 'tour')
                                   ? Icons.favorite
                                   : Icons.favorite_border,
-                              color: ref.watch(wishlistProvider).isFavorite(widget.experienceId, 'tour')
+                              color: ref
+                                      .watch(wishlistProvider)
+                                      .isFavorite(widget.experienceId, 'tour')
                                   ? AppColors.error
                                   : AppColors.primaryGold,
                             ),
                             onPressed: () async {
-                              final added = await ref.read(wishlistProvider.notifier).toggleFavorite(
-                                WishlistItemModel(
-                                  id: int.tryParse(widget.experienceId) ?? 0,
-                                  objectId: int.tryParse(widget.experienceId) ?? 0,
-                                  objectModel: 'tour',
-                                  title: tour.title,
-                                  imageUrl: tour.imageUrl,
-                                  price: tour.salePrice ?? tour.price,
-                                  location: tour.locationName ?? tour.address,
-                                ),
-                              );
+                              final added = await ref
+                                  .read(wishlistProvider.notifier)
+                                  .toggleFavorite(
+                                    WishlistItemModel(
+                                      id: int.tryParse(widget.experienceId) ??
+                                          0,
+                                      objectId:
+                                          int.tryParse(widget.experienceId) ??
+                                              0,
+                                      objectModel: 'tour',
+                                      title: tour.title,
+                                      imageUrl: tour.imageUrl,
+                                      price: tour.salePrice ?? tour.price,
+                                      location:
+                                          tour.locationName ?? tour.address,
+                                    ),
+                                  );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(added
-                                        ? (isAr ? 'تمت إضافة المسار إلى المفضلة ❤️' : 'Added trail to favorites ❤️')
-                                        : (isAr ? 'تمت إزالة المسار من المفضلة' : 'Removed from favorites')),
-                                    backgroundColor: added ? AppColors.primaryGold : AppColors.card,
+                                        ? (isAr
+                                            ? 'تمت إضافة المسار إلى المفضلة ❤️'
+                                            : 'Added trail to favorites ❤️')
+                                        : (isAr
+                                            ? 'تمت إزالة المسار من المفضلة'
+                                            : 'Removed from favorites')),
+                                    backgroundColor: added
+                                        ? AppColors.primaryGold
+                                        : AppColors.card,
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -150,16 +177,19 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           PageView.builder(
                             controller: _pageController,
                             itemCount: images.length,
-                            onPageChanged: (idx) => setState(() => _currentGalleryIndex = idx),
+                            onPageChanged: (idx) =>
+                                setState(() => _currentGalleryIndex = idx),
                             itemBuilder: (context, index) {
                               return GestureDetector(
-                                onTap: () => ImageViewerDialog.show(context, images: images, initialIndex: index),
+                                onTap: () => ImageViewerDialog.show(context,
+                                    images: images, initialIndex: index),
                                 child: CachedNetworkImage(
                                   imageUrl: images[index],
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Container(
                                     color: AppColors.surface,
-                                    child: const Icon(Icons.image_not_supported, color: AppColors.textMuted),
+                                    child: const Icon(Icons.image_not_supported,
+                                        color: AppColors.textMuted),
                                   ),
                                 ),
                               );
@@ -187,20 +217,27 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                             left: isAr ? 20 : null,
                             right: isAr ? null : 20,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.7),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: AppColors.primaryGold.withOpacity(0.5)),
+                                border: Border.all(
+                                    color:
+                                        AppColors.primaryGold.withOpacity(0.5)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.photo_library_outlined, color: AppColors.primaryGold, size: 14),
+                                  const Icon(Icons.photo_library_outlined,
+                                      color: AppColors.primaryGold, size: 14),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${_currentGalleryIndex + 1} / ${images.length}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
@@ -225,14 +262,17 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: images.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 8),
                                 itemBuilder: (context, idx) {
-                                  final isSelected = _currentGalleryIndex == idx;
+                                  final isSelected =
+                                      _currentGalleryIndex == idx;
                                   return GestureDetector(
                                     onTap: () {
                                       _pageController.animateToPage(
                                         idx,
-                                        duration: const Duration(milliseconds: 300),
+                                        duration:
+                                            const Duration(milliseconds: 300),
                                         curve: Curves.easeInOut,
                                       );
                                     },
@@ -241,7 +281,9 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: isSelected ? AppColors.primaryGold : Colors.transparent,
+                                          color: isSelected
+                                              ? AppColors.primaryGold
+                                              : Colors.transparent,
                                           width: 2,
                                         ),
                                       ),
@@ -264,21 +306,31 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: AppColors.goldGlow,
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.primaryGold.withOpacity(0.4)),
+                                  border: Border.all(
+                                      color: AppColors.primaryGold
+                                          .withOpacity(0.4)),
                                 ),
                                 child: Text(
-                                  tour.categoryName ?? (isAr ? 'مسار سياحي وتراثي' : 'Tourist Trail'),
-                                  style: const TextStyle(color: AppColors.primaryGold, fontSize: 12, fontWeight: FontWeight.bold),
+                                  tour.categoryName ??
+                                      (isAr
+                                          ? 'مسار سياحي وتراثي'
+                                          : 'Tourist Trail'),
+                                  style: const TextStyle(
+                                      color: AppColors.primaryGold,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ),
                               if (tour.locationName != null) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: AppColors.card,
                                     borderRadius: BorderRadius.circular(20),
@@ -287,11 +339,13 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.location_on_outlined, color: AppColors.textMuted, size: 14),
+                                      const Icon(Icons.location_on_outlined,
+                                          color: AppColors.textMuted, size: 14),
                                       const SizedBox(width: 4),
                                       Text(
                                         tour.locationName!,
-                                        style: AppTypography.bodySmall.copyWith(color: AppColors.textPrimary),
+                                        style: AppTypography.bodySmall.copyWith(
+                                            color: AppColors.textPrimary),
                                       ),
                                     ],
                                   ),
@@ -318,11 +372,27 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInfoItem(Icons.star, isAr ? 'التقييم' : 'Rating', '${tour.rating} (${tour.reviewsCount})'),
-                                Container(width: 1, height: 32, color: AppColors.border),
-                                _buildInfoItem(Icons.schedule, isAr ? 'المدة' : 'Duration', tour.duration ?? (isAr ? '٤-٦ ساعات' : '4-6 hours')),
-                                Container(width: 1, height: 32, color: AppColors.border),
-                                _buildInfoItem(Icons.groups_outlined, isAr ? 'المجموعة' : 'Group', isAr ? 'خاصة أو عائلية' : 'Private/Family'),
+                                _buildInfoItem(
+                                    Icons.star,
+                                    isAr ? 'التقييم' : 'Rating',
+                                    '${tour.rating} (${tour.reviewsCount})'),
+                                Container(
+                                    width: 1,
+                                    height: 32,
+                                    color: AppColors.border),
+                                _buildInfoItem(
+                                    Icons.schedule,
+                                    isAr ? 'المدة' : 'Duration',
+                                    tour.duration ??
+                                        (isAr ? '٤-٦ ساعات' : '4-6 hours')),
+                                Container(
+                                    width: 1,
+                                    height: 32,
+                                    color: AppColors.border),
+                                _buildInfoItem(
+                                    Icons.groups_outlined,
+                                    isAr ? 'المجموعة' : 'Group',
+                                    isAr ? 'خاصة أو عائلية' : 'Private/Family'),
                               ],
                             ),
                           ),
@@ -330,29 +400,42 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           const SizedBox(height: 24),
 
                           // Description / About Tour
-                          Text(isAr ? 'عن المسار والتجربة' : 'About the Trail & Experience', style: AppTypography.titleLarge),
+                          Text(
+                              isAr
+                                  ? 'عن المسار والتجربة'
+                                  : 'About the Trail & Experience',
+                              style: AppTypography.titleLarge),
                           const SizedBox(height: 8),
                           Text(
                             HtmlUtils.stripHtml(tour.content ?? ''),
-                            style: AppTypography.bodyLarge.copyWith(height: 1.7),
+                            style:
+                                AppTypography.bodyLarge.copyWith(height: 1.7),
                           ),
 
                           const SizedBox(height: 24),
 
                           // Itinerary / Timeline Stages
                           if (tour.itinerary.isNotEmpty) ...[
-                            Text(isAr ? 'محطات ومراحل المسار' : 'Itinerary & Route Stages', style: AppTypography.titleLarge),
+                            Text(
+                                isAr
+                                    ? 'محطات ومراحل المسار'
+                                    : 'Itinerary & Route Stages',
+                                style: AppTypography.titleLarge),
                             const SizedBox(height: 14),
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: tour.itinerary.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final stage = tour.itinerary[index];
-                                final stageTitle = _formatStageTitle(index, stage.title, isAr);
-                                final stageDesc = _formatStageDesc(stage.desc, isAr);
-                                final stageContent = _formatStageContent(index, stage.content, isAr);
+                                final stageTitle =
+                                    _formatStageTitle(index, stage.title, isAr);
+                                final stageDesc =
+                                    _formatStageDesc(stage.desc, isAr);
+                                final stageContent = _formatStageContent(
+                                    index, stage.content, isAr);
                                 return Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
@@ -361,41 +444,61 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                                     border: Border.all(color: AppColors.border),
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
                                           color: AppColors.goldGlow,
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           '${index + 1}',
-                                          style: const TextStyle(color: AppColors.primaryGold, fontWeight: FontWeight.bold, fontSize: 16),
+                                          style: const TextStyle(
+                                              color: AppColors.primaryGold,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16),
                                         ),
                                       ),
                                       const SizedBox(width: 14),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Text(stageTitle, style: AppTypography.titleSmall),
-                                            if (stageDesc != null && stageDesc.isNotEmpty) ...[
+                                            Text(stageTitle,
+                                                style:
+                                                    AppTypography.titleSmall),
+                                            if (stageDesc != null &&
+                                                stageDesc.isNotEmpty) ...[
                                               const SizedBox(height: 4),
-                                              Text(stageDesc, style: AppTypography.bodySmall.copyWith(color: AppColors.primaryGold)),
+                                              Text(stageDesc,
+                                                  style: AppTypography.bodySmall
+                                                      .copyWith(
+                                                          color: AppColors
+                                                              .primaryGold)),
                                             ],
-                                            if (stageContent != null && stageContent.isNotEmpty) ...[
+                                            if (stageContent != null &&
+                                                stageContent.isNotEmpty) ...[
                                               const SizedBox(height: 6),
-                                              Text(stageContent, style: AppTypography.bodySmall.copyWith(height: 1.5)),
+                                              Text(stageContent,
+                                                  style: AppTypography.bodySmall
+                                                      .copyWith(height: 1.5)),
                                             ],
                                           ],
                                         ),
                                       ),
-                                      if (stage.image != null && stage.image!.isNotEmpty)
+                                      if (stage.image != null &&
+                                          stage.image!.isNotEmpty)
                                         GestureDetector(
-                                          onTap: () => ImageViewerDialog.show(context, images: [stage.image!]),
+                                          onTap: () => ImageViewerDialog.show(
+                                              context,
+                                              images: [stage.image!]),
                                           child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                             child: CachedNetworkImage(
                                               imageUrl: stage.image!,
                                               width: 64,
@@ -413,8 +516,13 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           ],
 
                           // Includes & Excludes
-                          if (tour.includes.isNotEmpty || tour.excludes.isNotEmpty) ...[
-                            Text(isAr ? 'تفاصيل باقة الحجز' : 'Package Inclusions & Exclusions', style: AppTypography.titleLarge),
+                          if (tour.includes.isNotEmpty ||
+                              tour.excludes.isNotEmpty) ...[
+                            Text(
+                                isAr
+                                    ? 'تفاصيل باقة الحجز'
+                                    : 'Package Inclusions & Exclusions',
+                                style: AppTypography.titleLarge),
                             const SizedBox(height: 12),
                             Container(
                               padding: const EdgeInsets.all(16),
@@ -427,33 +535,53 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (tour.includes.isNotEmpty) ...[
-                                    Text(isAr ? 'تشمل الرحلة:' : 'Includes:', style: AppTypography.titleSmall.copyWith(color: AppColors.success)),
+                                    Text(isAr ? 'تشمل الرحلة:' : 'Includes:',
+                                        style: AppTypography.titleSmall
+                                            .copyWith(
+                                                color: AppColors.success)),
                                     const SizedBox(height: 8),
                                     ...tour.includes.map(
                                       (inc) => Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
                                         child: Row(
                                           children: [
-                                            const Icon(Icons.check_circle_outline, color: AppColors.success, size: 16),
+                                            const Icon(
+                                                Icons.check_circle_outline,
+                                                color: AppColors.success,
+                                                size: 16),
                                             const SizedBox(width: 8),
-                                            Expanded(child: Text(inc, style: AppTypography.bodyMedium)),
+                                            Expanded(
+                                                child: Text(inc,
+                                                    style: AppTypography
+                                                        .bodyMedium)),
                                           ],
                                         ),
                                       ),
                                     ),
                                   ],
                                   if (tour.excludes.isNotEmpty) ...[
-                                    if (tour.includes.isNotEmpty) const Divider(color: AppColors.border, height: 20),
-                                    Text(isAr ? 'لا تشمل الرحلة:' : 'Excludes:', style: AppTypography.titleSmall.copyWith(color: AppColors.error)),
+                                    if (tour.includes.isNotEmpty)
+                                      const Divider(
+                                          color: AppColors.border, height: 20),
+                                    Text(isAr ? 'لا تشمل الرحلة:' : 'Excludes:',
+                                        style: AppTypography.titleSmall
+                                            .copyWith(color: AppColors.error)),
                                     const SizedBox(height: 8),
                                     ...tour.excludes.map(
                                       (exc) => Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
                                         child: Row(
                                           children: [
-                                            const Icon(Icons.cancel_outlined, color: AppColors.error, size: 16),
+                                            const Icon(Icons.cancel_outlined,
+                                                color: AppColors.error,
+                                                size: 16),
                                             const SizedBox(width: 8),
-                                            Expanded(child: Text(exc, style: AppTypography.bodyMedium)),
+                                            Expanded(
+                                                child: Text(exc,
+                                                    style: AppTypography
+                                                        .bodyMedium)),
                                           ],
                                         ),
                                       ),
@@ -467,13 +595,18 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
 
                           // FAQs
                           if (tour.faqs.isNotEmpty) ...[
-                            Text(isAr ? 'الأسئلة الشائعة' : 'Frequently Asked Questions', style: AppTypography.titleLarge),
+                            Text(
+                                isAr
+                                    ? 'الأسئلة الشائعة'
+                                    : 'Frequently Asked Questions',
+                                style: AppTypography.titleLarge),
                             const SizedBox(height: 12),
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: tour.faqs.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 final faq = tour.faqs[index];
                                 return Container(
@@ -485,11 +618,17 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                                   child: ExpansionTile(
                                     iconColor: AppColors.primaryGold,
                                     collapsedIconColor: AppColors.textSecondary,
-                                    title: Text(faq.getDisplayTitle(isAr), style: AppTypography.titleSmall),
+                                    title: Text(faq.getDisplayTitle(isAr),
+                                        style: AppTypography.titleSmall),
                                     children: [
                                       Padding(
-                                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                                        child: Text(HtmlUtils.stripHtml(faq.getDisplayContent(isAr)), style: AppTypography.bodyMedium.copyWith(height: 1.5)),
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 0, 16, 14),
+                                        child: Text(
+                                            HtmlUtils.stripHtml(
+                                                faq.getDisplayContent(isAr)),
+                                            style: AppTypography.bodyMedium
+                                                .copyWith(height: 1.5)),
                                       ),
                                     ],
                                   ),
@@ -500,7 +639,11 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           ],
 
                           // Interactive Google Map Section
-                          Text(isAr ? 'الموقع الجغرافي والوصول' : 'Location & Directions', style: AppTypography.titleLarge),
+                          Text(
+                              isAr
+                                  ? 'الموقع الجغرافي والوصول'
+                                  : 'Location & Directions',
+                              style: AppTypography.titleLarge),
                           const SizedBox(height: 8),
                           GestureDetector(
                             onTap: () => _openMap(tour),
@@ -509,7 +652,9 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                               decoration: BoxDecoration(
                                 color: AppColors.card,
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.primaryGold.withOpacity(0.5)),
+                                border: Border.all(
+                                    color:
+                                        AppColors.primaryGold.withOpacity(0.5)),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.3),
@@ -526,32 +671,47 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                                       color: AppColors.goldGlow,
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                    child: const Icon(Icons.directions_outlined, color: AppColors.primaryGold, size: 28),
+                                    child: const Icon(Icons.directions_outlined,
+                                        color: AppColors.primaryGold, size: 28),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          tour.address ?? tour.locationName ?? (isAr ? 'موقع المسار التاريخي' : 'Trail Location'),
+                                          tour.address ??
+                                              tour.locationName ??
+                                              (isAr
+                                                  ? 'موقع المسار التاريخي'
+                                                  : 'Trail Location'),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                                          style: const TextStyle(
+                                              color: AppColors.textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          isAr ? 'انقر لفتح الاتجاهات المباشرة عبر خرائط Google' : 'Tap to open directions in Google Maps',
-                                          style: const TextStyle(color: AppColors.primaryGold, fontSize: 11),
+                                          isAr
+                                              ? 'انقر لفتح الاتجاهات المباشرة عبر خرائط Google'
+                                              : 'Tap to open directions in Google Maps',
+                                          style: const TextStyle(
+                                              color: AppColors.primaryGold,
+                                              fontSize: 11),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.open_in_new, color: AppColors.primaryGold, size: 20),
+                                  const Icon(Icons.open_in_new,
+                                      color: AppColors.primaryGold, size: 20),
                                 ],
                               ),
                             ),
                           ),
+                          const SizedBox(height: 30),
                         ],
                       ),
                     ),
@@ -565,12 +725,17 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    border: const Border(top: BorderSide(color: AppColors.border)),
+                    border:
+                        const Border(top: BorderSide(color: AppColors.border)),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 12, offset: const Offset(0, -4)),
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.5),
+                          blurRadius: 12,
+                          offset: const Offset(0, -4)),
                     ],
                   ),
                   child: SafeArea(
@@ -580,15 +745,20 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(isAr ? 'السعر يبدأ من' : 'Starts from', style: AppTypography.bodySmall),
-                            Text(tour.formattedPrice, style: AppTypography.price),
+                            Text(isAr ? 'السعر يبدأ من' : 'Starts from',
+                                style: AppTypography.bodySmall),
+                            Text(tour.formattedPrice,
+                                style: AppTypography.price),
                           ],
                         ),
                         const SizedBox(width: 20),
                         Expanded(
                           child: CustomButton(
-                            text: isAr ? 'حجز التذكرة والموعد' : 'Book Tickets & Date',
-                            onPressed: () => _showBookingModal(context, tour, isAr),
+                            text: isAr
+                                ? 'حجز التذكرة والموعد'
+                                : 'Book Tickets & Date',
+                            onPressed: () =>
+                                _showBookingModal(context, tour, isAr),
                           ),
                         ),
                       ],
@@ -600,7 +770,8 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
           );
         },
         loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator(color: AppColors.primaryGold)),
+          body: Center(
+              child: CircularProgressIndicator(color: AppColors.primaryGold)),
         ),
         error: (err, _) => Scaffold(
           appBar: AppBar(),
@@ -608,12 +779,18 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 54, color: AppColors.error),
+                const Icon(Icons.error_outline,
+                    size: 54, color: AppColors.error),
                 const SizedBox(height: 16),
-                Text(isAr ? 'تعذر تحميل تفاصيل المسار' : 'Failed to load trail details', style: AppTypography.titleLarge),
+                Text(
+                    isAr
+                        ? 'تعذر تحميل تفاصيل المسار'
+                        : 'Failed to load trail details',
+                    style: AppTypography.titleLarge),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => ref.refresh(tourDetailProvider(widget.experienceId)),
+                  onPressed: () =>
+                      ref.refresh(tourDetailProvider(widget.experienceId)),
                   child: Text(isAr ? 'إعادة المحاولة' : 'Retry'),
                 ),
               ],
@@ -643,19 +820,40 @@ class _ExperienceDetailsScreenState extends ConsumerState<ExperienceDetailsScree
     if (lower.contains('mornning') || lower.contains('morning')) {
       return 'المحطة الأولى: انطلاق الجولة الصباحية';
     }
-    if (lower.contains('hour 1') || lower.contains('1 hour') || lower.contains('stage 1') || lower.contains('day 1')) {
+    if (lower.contains('hour 1') ||
+        lower.contains('1 hour') ||
+        lower.contains('stage 1') ||
+        lower.contains('day 1')) {
       return 'المحطة الأولى: استكشاف الموقع التاريخي';
     }
-    if (lower.contains('hour 2') || lower.contains('2 hour') || lower.contains('stage 2') || lower.contains('day 2')) {
+    if (lower.contains('hour 2') ||
+        lower.contains('2 hour') ||
+        lower.contains('stage 2') ||
+        lower.contains('day 2')) {
       return 'المحطة الثانية: الجولة الإرشادية والمعالم';
     }
-    if (lower.contains('hour 3') || lower.contains('3 hour') || lower.contains('stage 3') || lower.contains('day 3')) {
+    if (lower.contains('hour 3') ||
+        lower.contains('3 hour') ||
+        lower.contains('stage 3') ||
+        lower.contains('day 3')) {
       return 'المحطة الثالثة: الاستراحة وتجربة الضيافة';
     }
-    if (lower.contains('hour 4') || lower.contains('4 hour') || lower.contains('stage 4') || lower.contains('day 4')) {
+    if (lower.contains('hour 4') ||
+        lower.contains('4 hour') ||
+        lower.contains('stage 4') ||
+        lower.contains('day 4')) {
       return 'المحطة الرابعة: ختام الجولة والتصوير';
     }
-    final ordinalsAr = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة', 'الثامنة'];
+    final ordinalsAr = [
+      'الأولى',
+      'الثانية',
+      'الثالثة',
+      'الرابعة',
+      'الخامسة',
+      'السادسة',
+      'السابعة',
+      'الثامنة'
+    ];
     final ord = index < ordinalsAr.length ? ordinalsAr[index] : '${index + 1}';
     return 'المحطة $ord: ${HtmlUtils.stripHtml(title)}';
   }
@@ -729,7 +927,10 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
     super.initState();
     if (widget.tour.personTypes.isNotEmpty) {
       for (var p in widget.tour.personTypes) {
-        _personQuantities[p.name] = (p.name.toLowerCase().contains('adult') || p.nameAr?.contains('18') == true) ? 1 : 0;
+        _personQuantities[p.name] = (p.name.toLowerCase().contains('adult') ||
+                p.nameAr?.contains('18') == true)
+            ? 1
+            : 0;
       }
     } else {
       _personQuantities['default'] = 1;
@@ -778,14 +979,17 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2)),
               ),
             ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(isAr ? 'خيارات وتفاصيل الحجز' : 'Booking Options', style: AppTypography.titleMedium),
+                Text(isAr ? 'خيارات وتفاصيل الحجز' : 'Booking Options',
+                    style: AppTypography.titleMedium),
                 IconButton(
                   icon: const Icon(Icons.close, color: AppColors.textSecondary),
                   onPressed: () => Navigator.pop(context),
@@ -798,7 +1002,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CachedNetworkImage(
-                    imageUrl: widget.tour.imageUrl ?? 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
+                    imageUrl: widget.tour.imageUrl ??
+                        'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
@@ -809,9 +1014,14 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.tour.title, style: AppTypography.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(widget.tour.title,
+                          style: AppTypography.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 4),
-                      Text('${widget.tour.formattedPrice} / ${isAr ? 'للشخص' : 'per person'}', style: AppTypography.price.copyWith(fontSize: 14)),
+                      Text(
+                          '${widget.tour.formattedPrice} / ${isAr ? 'للشخص' : 'per person'}',
+                          style: AppTypography.price.copyWith(fontSize: 14)),
                     ],
                   ),
                 ),
@@ -820,7 +1030,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
             const Divider(color: AppColors.border, height: 28),
 
             // 1. Date Selector
-            Text(isAr ? 'تاريخ الحجز' : 'Booking Date', style: AppTypography.titleSmall),
+            Text(isAr ? 'تاريخ الحجز' : 'Booking Date',
+                style: AppTypography.titleSmall),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: () async {
@@ -847,7 +1058,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: AppColors.card,
                   borderRadius: BorderRadius.circular(14),
@@ -858,7 +1070,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.calendar_month, color: AppColors.primaryGold, size: 20),
+                        const Icon(Icons.calendar_month,
+                            color: AppColors.primaryGold, size: 20),
                         const SizedBox(width: 10),
                         Text(
                           '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
@@ -866,7 +1079,11 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                         ),
                       ],
                     ),
-                    Text(isAr ? 'تغيير التاريخ' : 'Change Date', style: const TextStyle(color: AppColors.primaryGold, fontSize: 13, fontWeight: FontWeight.bold)),
+                    Text(isAr ? 'تغيير التاريخ' : 'Change Date',
+                        style: const TextStyle(
+                            color: AppColors.primaryGold,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -874,7 +1091,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
             const SizedBox(height: 20),
 
             // 2. Person Types / Ticket Quantities
-            Text(isAr ? 'خيارات التذاكر والزوار' : 'Ticket Options & Guests', style: AppTypography.titleSmall),
+            Text(isAr ? 'خيارات التذاكر والزوار' : 'Ticket Options & Guests',
+                style: AppTypography.titleSmall),
             const SizedBox(height: 10),
 
             if (widget.tour.personTypes.isNotEmpty)
@@ -885,11 +1103,15 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: AppColors.card,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: q > 0 ? AppColors.primaryGold.withOpacity(0.5) : AppColors.border),
+                    border: Border.all(
+                        color: q > 0
+                            ? AppColors.primaryGold.withOpacity(0.5)
+                            : AppColors.border),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -898,23 +1120,39 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name, style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                            Text(name,
+                                style: AppTypography.titleSmall
+                                    .copyWith(fontSize: 14)),
                             if (desc != null && desc.isNotEmpty)
-                              Text(desc, style: AppTypography.bodySmall.copyWith(fontSize: 11, color: AppColors.textMuted)),
-                            Text('${p.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}', style: AppTypography.price.copyWith(fontSize: 13)),
+                              Text(desc,
+                                  style: AppTypography.bodySmall.copyWith(
+                                      fontSize: 11,
+                                      color: AppColors.textMuted)),
+                            Text(
+                                '${p.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
+                                style:
+                                    AppTypography.price.copyWith(fontSize: 13)),
                           ],
                         ),
                       ),
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, color: AppColors.primaryGold, size: 22),
-                            onPressed: q > 0 ? () => setState(() => _personQuantities[p.name] = q - 1) : null,
+                            icon: const Icon(Icons.remove_circle_outline,
+                                color: AppColors.primaryGold, size: 22),
+                            onPressed: q > 0
+                                ? () => setState(
+                                    () => _personQuantities[p.name] = q - 1)
+                                : null,
                           ),
                           Text('$q', style: AppTypography.titleMedium),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryGold, size: 22),
-                            onPressed: q < p.max ? () => setState(() => _personQuantities[p.name] = q + 1) : null,
+                            icon: const Icon(Icons.add_circle_outline,
+                                color: AppColors.primaryGold, size: 22),
+                            onPressed: q < p.max
+                                ? () => setState(
+                                    () => _personQuantities[p.name] = q + 1)
+                                : null,
                           ),
                         ],
                       ),
@@ -924,7 +1162,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
               })
             else
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.card,
                   borderRadius: BorderRadius.circular(14),
@@ -933,19 +1172,27 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(isAr ? 'عدد الزوار' : 'Guests', style: AppTypography.titleSmall),
+                    Text(isAr ? 'عدد الزوار' : 'Guests',
+                        style: AppTypography.titleSmall),
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline, color: AppColors.primaryGold),
+                          icon: const Icon(Icons.remove_circle_outline,
+                              color: AppColors.primaryGold),
                           onPressed: (_personQuantities['default'] ?? 1) > 1
-                              ? () => setState(() => _personQuantities['default'] = (_personQuantities['default'] ?? 1) - 1)
+                              ? () => setState(() =>
+                                  _personQuantities['default'] =
+                                      (_personQuantities['default'] ?? 1) - 1)
                               : null,
                         ),
-                        Text('${_personQuantities['default'] ?? 1}', style: AppTypography.titleMedium),
+                        Text('${_personQuantities['default'] ?? 1}',
+                            style: AppTypography.titleMedium),
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: AppColors.primaryGold),
-                          onPressed: () => setState(() => _personQuantities['default'] = (_personQuantities['default'] ?? 1) + 1),
+                          icon: const Icon(Icons.add_circle_outline,
+                              color: AppColors.primaryGold),
+                          onPressed: () => setState(() =>
+                              _personQuantities['default'] =
+                                  (_personQuantities['default'] ?? 1) + 1),
                         ),
                       ],
                     ),
@@ -956,22 +1203,31 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
             // 3. Extra Services
             if (widget.tour.extraPrices.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(isAr ? 'خدمات إضافية اختيارية' : 'Optional Extra Services', style: AppTypography.titleSmall),
+              Text(isAr ? 'خدمات إضافية اختيارية' : 'Optional Extra Services',
+                  style: AppTypography.titleSmall),
               const SizedBox(height: 10),
               ...widget.tour.extraPrices.map((extra) {
                 final isSelected = _selectedExtras.contains(extra.name);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
+                  child: Material(
                     color: AppColors.card,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: isSelected ? AppColors.primaryGold : AppColors.border),
-                  ),
-                  child: CheckboxListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(
+                          color: isSelected
+                              ? AppColors.primaryGold
+                              : AppColors.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: CheckboxListTile(
                     activeColor: AppColors.primaryGold,
                     checkColor: AppColors.textDark,
-                    title: Text(extra.getDisplayName(isAr), style: AppTypography.titleSmall.copyWith(fontSize: 14)),
-                    subtitle: Text('+ ${extra.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}', style: AppTypography.price.copyWith(fontSize: 12)),
+                    title: Text(extra.getDisplayName(isAr),
+                        style: AppTypography.titleSmall.copyWith(fontSize: 14)),
+                    subtitle: Text(
+                        '+ ${extra.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
+                        style: AppTypography.price.copyWith(fontSize: 12)),
                     value: isSelected,
                     onChanged: (val) {
                       setState(() {
@@ -982,6 +1238,7 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                         }
                       });
                     },
+                  ),
                   ),
                 );
               }),
@@ -996,8 +1253,10 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(isAr ? 'المجموع الإجمالي' : 'Total Amount', style: AppTypography.bodySmall),
-                    Text('${total.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}', style: AppTypography.price.copyWith(fontSize: 22)),
+                    Text(isAr ? 'المجموع الإجمالي' : 'Total Amount',
+                        style: AppTypography.bodySmall),
+                    Text('${total.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
+                        style: AppTypography.price.copyWith(fontSize: 22)),
                   ],
                 ),
                 CustomButton(
@@ -1026,7 +1285,8 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
 
                     final extraItems = widget.tour.extraPrices
                         .where((e) => _selectedExtras.contains(e.name))
-                        .map((e) => BookingExtraItem(name: e.getDisplayName(isAr), price: e.price))
+                        .map((e) => BookingExtraItem(
+                            name: e.getDisplayName(isAr), price: e.price))
                         .toList();
 
                     final draft = BookingDraft(

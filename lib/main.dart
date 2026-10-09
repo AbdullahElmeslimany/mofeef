@@ -4,12 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/localization/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/booking/data/payment_gateways_provider.dart';
+
+const initialPaymentGatewaysMode =
+    PaymentGatewaysMode.both; //todo (both - moyasarOnly - codOnly)
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    const ProviderScope(
-      child: ModeefApp(),
+    ProviderScope(
+      overrides: [
+        paymentGatewaysManagerProvider.overrideWith(
+          (ref) =>
+              PaymentGatewaysManager(initialMode: initialPaymentGatewaysMode),
+        ),
+      ],
+      child: const ModeefApp(),
     ),
   );
 }
@@ -23,7 +33,7 @@ class ModeefApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return MaterialApp.router(
-      title: 'مُضيف — Modeef',
+      title: 'مُضيف',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       routerConfig: router,
@@ -40,4 +50,3 @@ class ModeefApp extends ConsumerWidget {
     );
   }
 }
-

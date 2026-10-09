@@ -48,22 +48,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (!mounted) return;
     if (savedUser != null) {
       state = state.copyWith(isAuthenticated: true, user: savedUser);
+    } else if (token != null && token.isNotEmpty) {
+      state = state.copyWith(isAuthenticated: true);
     }
 
     if (token != null && token.isNotEmpty) {
-      try {
-        final profile = await _repository.getProfile();
-        if (!mounted) return;
-        state = state.copyWith(isAuthenticated: true, user: profile);
-      } catch (_) {
-        if (!mounted) return;
-        if (savedUser != null) {
-          state = state.copyWith(isAuthenticated: true, user: savedUser);
-        } else {
-          state = state.copyWith(isAuthenticated: true);
-        }
-      }
+      _refreshProfile();
     }
+  }
+
+  Future<void> _refreshProfile() async {
+    try {
+      final profile = await _repository.getProfile();
+      if (!mounted) return;
+      state = state.copyWith(isAuthenticated: true, user: profile);
+    } catch (_) {}
   }
 
   Future<bool> login(String email, String password) async {
@@ -137,6 +136,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _repository.logout();
     if (!mounted) return;
     state = const AuthState();
+  }
+
+  Future<bool> deleteAccount() async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await _repository.deleteAccount();
+      if (!mounted) return false;
+      state = const AuthState();
+      return true;
+    } on Failure catch (e) {
+      if (!mounted) return false;
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
+      return false;
+    } catch (e) {
+      if (!mounted) return false;
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'تعذر حذف الحساب، يرجى المحاولة لاحقاً',
+      );
+      return false;
+    }
   }
 }
 

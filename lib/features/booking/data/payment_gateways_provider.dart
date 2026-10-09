@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_endpoints.dart';
 
 class PaymentGatewayItem {
   final String id;
@@ -24,121 +22,85 @@ class PaymentGatewayItem {
   bool get isMoyasar => id.startsWith('moyasar');
 }
 
-final paymentGatewaysProvider = FutureProvider<List<PaymentGatewayItem>>((ref) async {
-  final dio = ref.watch(dioProvider);
-  try {
-    final response = await dio.get(ApiEndpoints.gateways);
-    final data = response.data;
-    final List<PaymentGatewayItem> list = [];
+const _moyasarGateway = PaymentGatewayItem(
+  id: 'moyasar',
+  name: 'Online Payment via Moyasar',
+  nameAr: 'الدفع الإلكتروني عبر ميسر',
+  desc: 'Secure payment via Mada, Visa, MasterCard, Apple Pay & STC Pay',
+  descAr: 'دفع آمن ومشفر عبر مدى وفيزا وماستركارد وApple Pay وSTC Pay',
+  iconType: 'card',
+);
 
-    if (data is Map<String, dynamic>) {
-      if (data.containsKey('moyasar') || data['status'] == 1) {
-        list.add(
-          const PaymentGatewayItem(
-            id: 'moyasar_apple_pay',
-            name: 'Apple Pay (via Moyasar)',
-            nameAr: 'Apple Pay (عبر بوابة ميسر)',
-            desc: 'Instant & secure Apple Pay checkout',
-            descAr: 'دفع فوري وآمن بضغطة واحدة عبر Apple Pay',
-            iconType: 'apple_pay',
-          ),
-        );
-        list.add(
-          const PaymentGatewayItem(
-            id: 'moyasar_mada',
-            name: 'Mada Debit Card (via Moyasar)',
-            nameAr: 'بطاقة مدى البنكية (بوابة ميسر)',
-            desc: 'Saudi national payment network',
-            descAr: 'الدفع المباشر عبر بطاقة مدى السعودية',
-            iconType: 'mada',
-          ),
-        );
-        list.add(
-          const PaymentGatewayItem(
-            id: 'moyasar_card',
-            name: 'Credit Card (Visa / MasterCard)',
-            nameAr: 'البطاقات الائتمانية (Visa / MasterCard)',
-            desc: 'Secure credit card transaction',
-            descAr: 'معالجة مشفرة وآمنة لبطاقات فيزا وماستركارد',
-            iconType: 'card',
-          ),
-        );
-        list.add(
-          const PaymentGatewayItem(
-            id: 'moyasar_stc',
-            name: 'STC Pay (via Moyasar)',
-            nameAr: 'STC Pay (عبر بوابة ميسر)',
-            desc: 'Direct mobile wallet payment',
-            descAr: 'الدفع السريع عبر محفظة STC Pay',
-            iconType: 'stc_pay',
-          ),
-        );
-      }
+const _codGateway = PaymentGatewayItem(
+  id: 'cod',
+  name: 'Cash on Delivery',
+  nameAr: 'الدفع عند الاستلام',
+  desc: 'Pay in cash when the service is delivered',
+  descAr: 'ادفع نقدًا عند استلام الخدمة',
+  isOffline: true,
+  iconType: 'offline',
+);
 
-      if (data.containsKey('offline')) {
-        list.add(
-          const PaymentGatewayItem(
-            id: 'offline',
-            name: 'Offline / Pay on Arrival',
-            nameAr: 'الدفع عند الوصول / تحويل بنكي',
-            desc: 'Pay at the venue or direct bank transfer',
-            descAr: 'الدفع نقداً أو بالشبكة عند نقطة الالتقاء أو تحويل بنكي',
-            isOffline: true,
-            iconType: 'offline',
-          ),
-        );
-      }
-    }
+const appPaymentGateways = <PaymentGatewayItem>[_moyasarGateway, _codGateway];
 
-    if (list.isEmpty) {
-      list.addAll(_defaultGateways);
-    }
-    return list;
-  } catch (_) {
-    return _defaultGateways;
+enum PaymentGatewaysMode {
+  both,
+  moyasarOnly,
+  codOnly,
+}
+
+const defaultPaymentGatewaysMode = PaymentGatewaysMode.both;
+
+class PaymentGatewaysManager extends StateNotifier<PaymentGatewaysMode> {
+  PaymentGatewaysManager({PaymentGatewaysMode initialMode = defaultPaymentGatewaysMode})
+      : super(initialMode);
+
+  Set<String>? _allowedIds;
+
+  void setMode(PaymentGatewaysMode mode) {
+    _allowedIds = null;
+    state = mode;
   }
+
+  void showBoth() => setMode(PaymentGatewaysMode.both);
+
+  void showMoyasarOnly() => setMode(PaymentGatewaysMode.moyasarOnly);
+
+  void showCodOnly() => setMode(PaymentGatewaysMode.codOnly);
+
+  void showOnly(Set<String> gatewayIds) {
+    _allowedIds = gatewayIds;
+    state = PaymentGatewaysMode.both;
+  }
+
+  void resetToDefault() => setMode(defaultPaymentGatewaysMode);
+
+  List<PaymentGatewayItem> get visibleGateways {
+    final pool = _allowedIds == null
+        ? appPaymentGateways
+        : appPaymentGateways
+            .where((g) => _allowedIds!.contains(g.id))
+            .toList();
+    return switch (state) {
+      PaymentGatewaysMode.both => pool,
+      PaymentGatewaysMode.moyasarOnly => pool.where((g) => g.isMoyasar).toList(),
+      PaymentGatewaysMode.codOnly => pool.where((g) => g.isOffline).toList(),
+    };
+  }
+}
+
+final paymentGatewaysManagerProvider =
+    StateNotifierProvider<PaymentGatewaysManager, PaymentGatewaysMode>(
+  (ref) => PaymentGatewaysManager(),
+);
+
+final visiblePaymentGatewaysProvider =
+    Provider<List<PaymentGatewayItem>>((ref) {
+  ref.watch(paymentGatewaysManagerProvider);
+  return ref.read(paymentGatewaysManagerProvider.notifier).visibleGateways;
 });
 
-const _defaultGateways = [
-  PaymentGatewayItem(
-    id: 'moyasar_apple_pay',
-    name: 'Apple Pay (via Moyasar)',
-    nameAr: 'Apple Pay (بوابة ميسر المعتمدة)',
-    desc: 'Instant Apple Pay payment',
-    descAr: 'دفع فوري وآمن عبر Apple Pay معتمد من ساما',
-    iconType: 'apple_pay',
-  ),
-  PaymentGatewayItem(
-    id: 'moyasar_mada',
-    name: 'Mada Debit Card (via Moyasar)',
-    nameAr: 'بطاقة مدى البنكية (بوابة ميسر)',
-    desc: 'Saudi national payment network',
-    descAr: 'الدفع عبر الشبكة السعودية للمدفوعات (مدى)',
-    iconType: 'mada',
-  ),
-  PaymentGatewayItem(
-    id: 'moyasar_card',
-    name: 'Credit Card (Visa / MasterCard)',
-    nameAr: 'بطاقات Visa / MasterCard (بوابة ميسر)',
-    desc: 'Secure credit card transaction',
-    descAr: 'بوابة دفع ميسر المشفرة للبطاقات العالمية',
-    iconType: 'card',
-  ),
-  PaymentGatewayItem(
-    id: 'wallet',
-    name: 'Modeefe Wallet Balance',
-    nameAr: 'رصيد محفظة مُضيف الرقمية',
-    desc: 'Pay directly from your in-app balance',
-    descAr: 'خصم مباشر وفوري من رصيد محفظتك المتاح',
-    iconType: 'wallet',
-  ),
-  PaymentGatewayItem(
-    id: 'offline',
-    name: 'Pay on Arrival',
-    nameAr: 'الدفع عند الوصول / تحويل بنكي',
-    desc: 'Pay at the venue or transfer',
-    descAr: 'الدفع عند نقطة بدء المسار أو الفعالية',
-    isOffline: true,
-    iconType: 'offline',
-  ),
-];
+final paymentGatewaysProvider =
+    FutureProvider<List<PaymentGatewayItem>>((ref) async {
+  return ref.watch(visiblePaymentGatewaysProvider);
+});

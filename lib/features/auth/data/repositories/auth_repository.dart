@@ -12,6 +12,8 @@ abstract class AuthRepository {
   Future<void> updateProfile(Map<String, dynamic> data);
   Future<void> changePassword(String currentPassword, String newPassword);
   Future<void> logout();
+  Future<void> deleteAccount();
+  Future<void> forgotPassword(String email);
   Future<String?> getSavedToken();
   Future<UserModel?> getSavedUser();
   Future<void> saveUser(UserModel user);
@@ -103,6 +105,27 @@ class AuthRepositoryImpl implements AuthRepository {
       final storage = _ref.read(secureStorageProvider);
       await storage.delete(key: 'auth_token');
       await storage.delete(key: 'user_profile');
+    }
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      await _remoteDataSource.deleteAccount();
+      final storage = _ref.read(secureStorageProvider);
+      await storage.delete(key: 'auth_token');
+      await storage.delete(key: 'user_profile');
+    } on DioException catch (e) {
+      throw ServerFailure.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    try {
+      await _remoteDataSource.forgotPassword(email);
+    } on DioException catch (e) {
+      throw ServerFailure.fromDioException(e);
     }
   }
 

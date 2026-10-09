@@ -2,7 +2,7 @@ name: modeef
 description: "Modeef — Luxury Saudi Heritage & Tourism Experience Platform"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.5.3
@@ -21,19 +21,21 @@ dependencies:
 
   # Networking & Data
   dio: ^5.7.0
-  flutter_secure_storage: ^9.2.4
-  shared_preferences: ^2.5.3
-  intl: ^0.19.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+  intl: ^0.20.3
 
   # UI, Icons, Typography & Animations
-  google_fonts: ^6.3.0
-  flutter_svg: ^2.1.0
-  cached_network_image: ^3.4.1
+  google_fonts: ^8.2.1
+  flutter_svg: ^2.0.10+1
+  cached_network_image: ^3.4.0
   shimmer: ^3.0.0
   font_awesome_flutter: ^10.9.0
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.1
   share_plus: ^10.1.4
+  moyasar: ^3.0.5
+  uuid: ^4.6.0
 
 dev_dependencies:
   flutter_test:

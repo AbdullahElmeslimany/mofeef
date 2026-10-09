@@ -29,53 +29,7 @@ class GuideRepositoryImpl implements GuideRepository {
       );
       final data = response.data;
       final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
-      return list.map((e) {
-        final map = e as Map<String, dynamic>;
-        final rawPrice = map['display_price_per_hour']?.toString() ?? map['price_per_hour']?.toString() ?? map['price']?.toString();
-        String formattedPrice;
-        if (rawPrice != null && rawPrice.isNotEmpty) {
-          final clean = rawPrice.replaceAll('﷼', '').replaceAll('ر.س', '').trim();
-          final numVal = double.tryParse(clean);
-          formattedPrice = numVal != null ? '${numVal.toStringAsFixed(0)} ﷼ / ساعة' : '$rawPrice / ساعة';
-        } else {
-          formattedPrice = '250 ﷼ / ساعة';
-        }
-
-        final langList = <String>[];
-        if (map['languages'] is List) {
-          for (var l in map['languages']) {
-            final s = l.toString();
-            if (s == 'ar') {
-              langList.add('العربية');
-            } else if (s == 'en') {
-              langList.add('الإنجليزية');
-            } else if (s == 'fr') {
-              langList.add('الفرنسية');
-            } else if (s.isNotEmpty) {
-              langList.add(s);
-            }
-          }
-        }
-        if (langList.isEmpty) {
-          langList.add('العربية');
-        }
-
-        final avatar = map['avatar_url']?.toString() ?? map['image']?.toString();
-        final chosenAvatar = (avatar != null && avatar.isNotEmpty && !avatar.contains('via.placeholder'))
-            ? avatar
-            : 'https://staging.modeefe.com/themes/mytravel/images/guide-default.jpg';
-
-        return GuideModel(
-          id: map['id']?.toString() ?? map['uuid']?.toString() ?? '0',
-          name: map['name']?.toString() ?? map['title']?.toString() ?? 'مرشد سياحي معتمد',
-          title: map['bio']?.toString() ?? map['guide_type']?.toString() ?? 'مرشد سياحي مرخص',
-          languages: langList,
-          rating: double.tryParse(map['review_score']?.toString() ?? '4.9') ?? 4.9,
-          toursCount: int.tryParse(map['tours_count']?.toString() ?? map['museums_count']?.toString() ?? '12') ?? 12,
-          hourlyRate: formattedPrice,
-          imageUrl: chosenAvatar,
-        );
-      }).toList();
+      return list.map((e) => _mapGuide(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }
@@ -85,20 +39,111 @@ class GuideRepositoryImpl implements GuideRepository {
   Future<GuideModel> getGuideDetail(dynamic id) async {
     try {
       final response = await _dio.get(ApiEndpoints.guideDetail(id));
-      final map = response.data is Map && response.data['data'] != null ? response.data['data'] as Map<String, dynamic> : response.data as Map<String, dynamic>;
-      return GuideModel(
-        id: map['id']?.toString() ?? id.toString(),
-        name: map['name']?.toString() ?? map['title']?.toString() ?? 'مرشد سياحي',
-        title: map['bio']?.toString() ?? map['job']?.toString() ?? 'مرشد سياحي معتمد',
-        languages: map['languages'] is List ? (map['languages'] as List).map((l) => l.toString()).toList() : ['العربية'],
-        rating: double.tryParse(map['review_score']?.toString() ?? '4.9') ?? 4.9,
-        toursCount: int.tryParse(map['tours_count']?.toString() ?? '50') ?? 50,
-        hourlyRate: '${map['price'] ?? '150'} ﷼ / ساعة',
-        imageUrl: map['avatar_url']?.toString() ?? map['image']?.toString() ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
-      );
+      final data = response.data;
+      if (data is Map && data['status'] == 0) {
+        throw ServerFailure(
+          data['message']?.toString() ?? 'Guide not found',
+        );
+      }
+      final map = data is Map && data['data'] is Map
+          ? data['data'] as Map<String, dynamic>
+          : (data is Map<String, dynamic> ? data : <String, dynamic>{});
+      return _mapGuide(map,
+          fallbackId: id.toString(), isDetail: true);
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }
+  }
+
+  GuideModel _mapGuide(Map<String, dynamic> map, {String? fallbackId, bool isDetail = false}) {
+    final rawPrice = map['price_per_hour']?.toString() ??
+        map['display_price_per_hour']?.toString() ??
+        map['price']?.toString();
+    String formattedPrice;
+    if (rawPrice != null && rawPrice.isNotEmpty) {
+      final clean = rawPrice
+          .replaceAll('﷼', '')
+          .replaceAll('ر.س', '')
+          .replaceAll(r'$', '')
+          .trim();
+      final numVal = double.tryParse(clean);
+      formattedPrice = numVal != null ? '${numVal.toStringAsFixed(0)} ﷼ / ساعة' : '$clean ﷼ / ساعة';
+    } else {
+      formattedPrice = '250 ﷼ / ساعة';
+    }
+
+    final langList = _mapLanguages(map['languages']);
+    final avatar = map['avatar_url']?.toString() ?? map['image']?.toString();
+    final chosenAvatar = (avatar != null && avatar.isNotEmpty && !avatar.contains('via.placeholder'))
+        ? avatar
+        : 'https://staging.modeefe.com/themes/mytravel/images/guide-default.jpg';
+
+    final idStr = map['uuid']?.toString() ?? map['id']?.toString() ?? fallbackId ?? '0';
+    final rating = _extractRating(map['review_score']);
+    final toursCount = int.tryParse(
+            map['museums_count']?.toString() ??
+                map['tours_count']?.toString() ??
+                (isDetail ? '0' : '12')) ??
+        (isDetail ? 0 : 12);
+
+    return GuideModel(
+      id: idStr,
+      intId: int.tryParse(map['id']?.toString() ?? ''),
+      name: map['name']?.toString() ?? map['title']?.toString() ?? 'مرشد سياحي معتمد',
+      title: map['bio']?.toString() ??
+          map['description']?.toString() ??
+          map['guide_type']?.toString() ??
+          'مرشد سياحي مرخص',
+      languages: langList,
+      rating: rating,
+      toursCount: toursCount,
+      hourlyRate: formattedPrice,
+      imageUrl: chosenAvatar,
+      city: map['city']?.toString(),
+      yearStarted: map['year_started_working']?.toString(),
+      isAvailable: map['is_available'] == true || map['is_available'] == 1,
+      freeConsultation: map['free_consultation'] == true || map['free_consultation'] == 1,
+      hasDiscount: map['has_discount'] == true || map['has_discount'] == 1,
+      museums: (map['museums'] is List)
+          ? (map['museums'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : const [],
+      events: (map['events'] is List)
+          ? (map['events'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : const [],
+      relatedGuides: (map['related_guides'] is List)
+          ? (map['related_guides'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : const [],
+    );
+  }
+
+  List<String> _mapLanguages(dynamic raw) {
+    final langList = <String>[];
+    if (raw is List) {
+      for (var l in raw) {
+        final s = l.toString();
+        if (s == 'ar' || s == 'ab') {
+          langList.add('العربية');
+        } else if (s == 'en') {
+          langList.add('English');
+        } else if (s == 'fr') {
+          langList.add('Français');
+        } else if (s.isNotEmpty) {
+          langList.add(s);
+        }
+      }
+    }
+    if (langList.isEmpty) {
+      langList.add('العربية');
+    }
+    return langList;
+  }
+
+  double _extractRating(dynamic raw) {
+    if (raw is Map) {
+      final v = double.tryParse(raw['score_total']?.toString() ?? '');
+      if (v != null && v > 0) return v;
+    }
+    return double.tryParse(raw?.toString() ?? '') ?? 4.9;
   }
 }
 
