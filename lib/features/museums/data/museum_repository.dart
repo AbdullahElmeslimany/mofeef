@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_response_handler.dart';
 
 class MuseumModel {
   final int id;
@@ -36,6 +37,8 @@ class MuseumModel {
   });
 
   String get formattedPrice => price > 0 ? '${price.toStringAsFixed(0)} ﷼' : 'دخول مجاني';
+  double get ratingAverage => rating;
+  bool get isFree => price <= 0;
 
   factory MuseumModel.fromJson(Map<String, dynamic> json) {
     double parsedRating = 4.9;
@@ -93,8 +96,7 @@ class MuseumRepositoryImpl implements MuseumRepository {
           'limit': 10,
         },
       );
-      final data = response.data;
-      final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
+      final list = ApiResponseHandler.extractList(response.data);
       return list.map((e) => MuseumModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
@@ -105,7 +107,7 @@ class MuseumRepositoryImpl implements MuseumRepository {
   Future<MuseumModel> getMuseumDetail(dynamic id) async {
     try {
       final response = await _dio.get(ApiEndpoints.museumDetail(id));
-      final data = response.data is Map && response.data['data'] != null ? response.data['data'] : response.data;
+      final data = ApiResponseHandler.getDataOrThrow(response.data, 'لم يتم العثور على بيانات المتحف');
       return MuseumModel.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);

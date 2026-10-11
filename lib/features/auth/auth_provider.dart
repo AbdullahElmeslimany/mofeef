@@ -61,7 +61,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final profile = await _repository.getProfile();
       if (!mounted) return;
-      state = state.copyWith(isAuthenticated: true, user: profile);
+      if (profile.email.isNotEmpty && profile.id != 0) {
+        state = state.copyWith(isAuthenticated: true, user: profile);
+      }
     } catch (_) {}
   }
 
@@ -72,7 +74,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       UserModel finalUser = user;
       try {
         final profile = await _repository.getProfile();
-        finalUser = profile;
+        if (profile.email.isNotEmpty && profile.id != 0) {
+          finalUser = profile;
+        }
       } catch (_) {}
 
       if (!mounted) return true;
@@ -156,6 +160,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
         errorMessage: 'تعذر حذف الحساب، يرجى المحاولة لاحقاً',
       );
       return false;
+    }
+  }
+
+  Future<String?> resendVerificationEmail(String email) async {
+    try {
+      return await _repository.resendVerificationEmail(email);
+    } on Failure catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'تعذر إرسال رابط التحقق، يرجى المحاولة لاحقاً';
     }
   }
 }

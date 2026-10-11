@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/localization/locale_provider.dart';
-import '../../../core/utils/html_utils.dart';
+import '../../../core/widgets/unified_item_card.dart';
 import '../data/models/tour_model.dart';
 import '../data/repositories/tour_repository.dart';
 
@@ -26,16 +25,8 @@ class TouristTrailsScreen extends ConsumerStatefulWidget {
 
 class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
   final _searchController = TextEditingController();
-  String _selectedRouteType = 'الكل';
-  String _selectedStyle = 'الكل';
-  RangeValues _priceRange = const RangeValues(100, 500);
+  RangeValues _priceRange = const RangeValues(0, 1000);
   double _minRating = 0.0;
-
-  final List<String> _routeTypesAr = ['الكل', 'المسارات السياحية', 'السياحة البيئية', 'جولات برفقة مرشد', 'مسارات تاريخية'];
-  final List<String> _routeTypesEn = ['All', 'Tourist Routes', 'Ecotourism', 'Escorted Tour', 'Historical Trails'];
-
-  final List<String> _stylesAr = ['الكل', 'ثقافي', 'تاريخي', 'إسلامي', 'تراث شعبي', 'مغامرات'];
-  final List<String> _stylesEn = ['All', 'Cultural', 'Historical', 'Islamic', 'Folk Heritage', 'Adventures'];
 
   @override
   void dispose() {
@@ -43,24 +34,21 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
     super.dispose();
   }
 
-  void _openFilterModal(BuildContext context, bool isAr) {
+  void _openFilterModal(BuildContext context, bool isAr, bool isDark, Color cardBg, Color cardBorder, Color textPrimary, Color textMuted) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
-          final routeTypes = isAr ? _routeTypesAr : _routeTypesEn;
-          final styles = isAr ? _stylesAr : _stylesEn;
-
           return Padding(
             padding: EdgeInsets.only(
               left: 20,
               right: 20,
-              top: 20,
+              top: 16,
               bottom: MediaQuery.of(context).viewInsets.bottom + 24,
             ),
             child: Column(
@@ -69,9 +57,9 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
               children: [
                 Center(
                   child: Container(
-                    width: 40,
+                    width: 44,
                     height: 4,
-                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(color: cardBorder, borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -80,76 +68,26 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
                   children: [
                     Text(
                       isAr ? 'تصفية المسارات السياحية' : 'Filter Tourist Trails',
-                      style: AppTypography.headingSmall,
+                      style: GoogleFonts.cairo(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
                     ),
                     TextButton(
                       onPressed: () {
                         setModalState(() {
-                          _selectedRouteType = 'الكل';
-                          _selectedStyle = 'الكل';
-                          _priceRange = const RangeValues(100, 500);
+                          _priceRange = const RangeValues(0, 1000);
                           _minRating = 0.0;
                         });
                         setState(() {});
                       },
                       child: Text(
                         isAr ? 'إعادة ضبط' : 'Reset All',
-                        style: const TextStyle(color: AppColors.error),
+                        style: GoogleFonts.cairo(color: AppColors.error, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 16),
-
-                // Route Type Filter
-                Text(isAr ? 'نوع المسار' : 'Route Type', style: AppTypography.titleSmall),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: routeTypes.map((rt) {
-                    final isSel = (_selectedRouteType == rt) || (_selectedRouteType == 'الكل' && rt == (isAr ? 'الكل' : 'All'));
-                    return ChoiceChip(
-                      label: Text(rt),
-                      selected: isSel,
-                      onSelected: (val) {
-                        setModalState(() => _selectedRouteType = rt);
-                        setState(() {});
-                      },
-                      selectedColor: AppColors.primaryGold,
-                      backgroundColor: AppColors.card,
-                      labelStyle: TextStyle(
-                        color: isSel ? AppColors.textDark : AppColors.textPrimary,
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                // Style Filter
-                Text(isAr ? 'نمط الرحلة' : 'Travel Style', style: AppTypography.titleSmall),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: styles.map((st) {
-                    final isSel = (_selectedStyle == st) || (_selectedStyle == 'الكل' && st == (isAr ? 'الكل' : 'All'));
-                    return ChoiceChip(
-                      label: Text(st),
-                      selected: isSel,
-                      onSelected: (val) {
-                        setModalState(() => _selectedStyle = st);
-                        setState(() {});
-                      },
-                      selectedColor: AppColors.primaryGold,
-                      backgroundColor: AppColors.card,
-                      labelStyle: TextStyle(
-                        color: isSel ? AppColors.textDark : AppColors.textPrimary,
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    );
-                  }).toList(),
                 ),
                 const SizedBox(height: 16),
 
@@ -157,20 +95,27 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(isAr ? 'نطاق السعر' : 'Price Range', style: AppTypography.titleSmall),
                     Text(
-                      '${_priceRange.start.round()} — ${_priceRange.end.round()} ﷼',
-                      style: AppTypography.price.copyWith(fontSize: 14),
+                      isAr ? 'نطاق السعر' : 'Price Range',
+                      style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                    ),
+                    Text(
+                      '${_priceRange.start.round()} — ${_priceRange.end.round()} ${isAr ? 'ر.س' : 'SAR'}',
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accentGold,
+                      ),
                     ),
                   ],
                 ),
                 RangeSlider(
                   values: _priceRange,
-                  min: 50,
+                  min: 0,
                   max: 1000,
-                  divisions: 19,
-                  activeColor: AppColors.primaryGold,
-                  inactiveColor: AppColors.border,
+                  divisions: 20,
+                  activeColor: AppColors.primaryMauve,
+                  inactiveColor: cardBorder,
                   onChanged: (val) {
                     setModalState(() => _priceRange = val);
                     setState(() {});
@@ -178,48 +123,55 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Rating Filter
-                Text(isAr ? 'التقييم الأدنى' : 'Minimum Rating', style: AppTypography.titleSmall),
+                // Minimum Rating
+                Text(
+                  isAr ? 'الحد الأدنى للتقييم' : 'Minimum Rating',
+                  style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                ),
                 const SizedBox(height: 8),
                 Row(
-                  children: [0.0, 4.0, 4.5, 4.8].map((rate) {
-                    final isSel = _minRating == rate;
-                    final label = rate == 0.0 ? (isAr ? 'الكل' : 'All') : '★ $rate+';
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: ChoiceChip(
-                        label: Text(label),
-                        selected: isSel,
-                        onSelected: (val) {
-                          setModalState(() => _minRating = rate);
-                          setState(() {});
-                        },
-                        selectedColor: AppColors.primaryGold,
-                        backgroundColor: AppColors.card,
-                        labelStyle: TextStyle(
-                          color: isSel ? AppColors.textDark : AppColors.textPrimary,
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [0.0, 3.0, 4.0, 4.5].map((r) {
+                    final isSel = _minRating == r;
+                    final label = r == 0.0 ? (isAr ? 'الكل' : 'All') : '$r+ ⭐';
+                    return GestureDetector(
+                      onTap: () {
+                        setModalState(() => _minRating = r);
+                        setState(() {});
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSel ? AppColors.primaryMauve : (isDark ? const Color(0xFF1E1624) : const Color(0xFFECE7EF)),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          label,
+                          style: GoogleFonts.cairo(
+                            color: isSel ? Colors.white : textMuted,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-                // Apply button
                 SizedBox(
                   width: double.infinity,
+                  height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGold,
-                      foregroundColor: AppColors.textDark,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: AppColors.accentGold,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => Navigator.pop(ctx),
                     child: Text(
                       isAr ? 'تطبيق الفلاتر' : 'Apply Filters',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 14.5),
                     ),
                   ),
                 ),
@@ -236,50 +188,81 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
     final trailsAsync = ref.watch(touristTrailsProvider(_searchController.text));
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final inputBg = isDark ? const Color(0xFF191222) : const Color(0xFFF7F4F9);
 
     return Scaffold(
+      backgroundColor: bg,
       appBar: AppBar(
-        title: Text(isAr ? 'المسارات السياحية' : 'Tourist Trails & Routes'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: textPrimary, size: 20),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          isAr ? 'المسارات السياحية' : 'Tourist Trails & Routes',
+          style: GoogleFonts.cairo(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
       body: Column(
         children: [
           // Search Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
+                      color: inputBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: cardBorder, width: 1.2),
                     ),
                     child: TextField(
                       controller: _searchController,
                       onChanged: (_) => setState(() {}),
+                      cursorColor: AppColors.primaryMauve,
+                      style: GoogleFonts.cairo(color: textPrimary, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: isAr ? 'ابحث عن مسار سياحي (مثل صلح الحديبية)...' : 'Search trail (e.g. Al-Hudaybiyyah)...',
-                        hintStyle: AppTypography.bodySmall,
-                        prefixIcon: const Icon(Icons.search, color: AppColors.primaryGold),
+                        hintStyle: GoogleFonts.cairo(color: textMuted.withValues(alpha: 0.7), fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: AppColors.primaryMauve, size: 22),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear, color: textMuted, size: 18),
+                                onPressed: () => setState(() => _searchController.clear()),
+                              )
+                            : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () => _openFilterModal(context, isAr),
+                  onTap: () => _openFilterModal(context, isAr, isDark, cardBg, cardBorder, textPrimary, textMuted),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    height: 50,
+                    width: 50,
                     decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.primaryGold.withOpacity(0.5)),
+                      color: isDark ? const Color(0xFF281C30) : const Color(0xFFEDE6F2),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.primaryMauve.withValues(alpha: 0.3)),
                     ),
-                    child: const Icon(Icons.filter_list, color: AppColors.primaryGold),
+                    child: const Icon(Icons.tune_rounded, color: AppColors.primaryMauve, size: 22),
                   ),
                 ),
               ],
@@ -290,7 +273,6 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
           Expanded(
             child: trailsAsync.when(
               data: (trails) {
-                // Apply in-memory price, rating, and search filter
                 final filtered = trails.where((t) {
                   final matchesPrice = t.priceNumeric >= _priceRange.start && t.priceNumeric <= _priceRange.end;
                   final matchesRating = t.rating >= _minRating;
@@ -305,22 +287,11 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.alt_route, color: AppColors.textMuted, size: 64),
-                        const SizedBox(height: 16),
+                        Icon(Icons.alt_route, color: textMuted, size: 54),
+                        const SizedBox(height: 14),
                         Text(
-                          isAr ? 'لا توجد مسارات مطابقة لمعايير البحث' : 'No trails found matching criteria',
-                          style: AppTypography.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _searchController.clear();
-                              _priceRange = const RangeValues(100, 500);
-                              _selectedRouteType = 'الكل';
-                            });
-                          },
-                          child: Text(isAr ? 'إعادة ضبط البحث' : 'Reset Search'),
+                          isAr ? 'لا توجد مسارات مطابقة لمعايير البحث' : 'No trails found',
+                          style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
                         ),
                       ],
                     ),
@@ -328,27 +299,41 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final trail = filtered[index];
-                    return _buildTrailCard(context, trail, isAr);
+                    return UnifiedItemCard(
+                      title: trail.title,
+                      imageUrl: trail.imageUrl,
+                      locationName: trail.locationName ?? (isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia'),
+                      rating: trail.rating,
+                      price: '${trail.priceNumeric.toStringAsFixed(0)} ${isAr ? 'ر.س' : 'SAR'}',
+                      accentColor: AppColors.primaryMauve,
+                      onTap: () => context.push('/tour/${trail.id}'),
+                    );
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryGold)),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryMauve),
+              ),
               error: (err, _) => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error, size: 48),
-                    const SizedBox(height: 12),
-                    Text(isAr ? 'تعذر تحميل المسارات السياحية' : 'Failed to load trails', style: AppTypography.titleMedium),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
+                    Text(
+                      isAr ? 'تعذر تحميل المسارات السياحية' : 'Failed to load trails',
+                      style: GoogleFonts.cairo(color: textMuted, fontSize: 14),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
                       onPressed: () => ref.refresh(touristTrailsProvider(_searchController.text)),
-                      child: Text(isAr ? 'إعادة المحاولة' : 'Retry'),
+                      child: Text(
+                        isAr ? 'إعادة المحاولة' : 'Retry',
+                        style: GoogleFonts.cairo(color: AppColors.accentGold, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
@@ -356,176 +341,6 @@ class _TouristTrailsScreenState extends ConsumerState<TouristTrailsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTrailCard(BuildContext context, TourModel trail, bool isAr) {
-    final cleanDesc = HtmlUtils.stripHtml(trail.description);
-
-    return GestureDetector(
-      onTap: () => context.push('/experience/${trail.id}'),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Stack
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: CachedNetworkImage(
-                    imageUrl: trail.imageUrl ?? 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => Container(
-                      height: 180,
-                      color: AppColors.surface,
-                      child: const Icon(Icons.image_not_supported, color: AppColors.textMuted),
-                    ),
-                  ),
-                ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.4),
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.7),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: isAr ? 12 : null,
-                  left: isAr ? null : 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.65),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.primaryGold.withOpacity(0.6)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.alt_route, color: AppColors.primaryGold, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          trail.categoryName != null && trail.categoryName!.isNotEmpty ? trail.categoryName! : (isAr ? 'مسار سياحي' : 'Tourist Route'),
-                          style: const TextStyle(color: AppColors.primaryGold, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (trail.duration != null && trail.duration!.isNotEmpty)
-                  Positioned(
-                    bottom: 12,
-                    right: isAr ? 12 : null,
-                    left: isAr ? null : 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.schedule, color: Colors.white, size: 12),
-                          const SizedBox(width: 4),
-                          Text(trail.duration!, style: const TextStyle(color: Colors.white, fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-
-            // Card Body
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          trail.title,
-                          style: AppTypography.headingSmall.copyWith(fontSize: 17),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(Icons.star, color: AppColors.primaryGold, size: 16),
-                          const SizedBox(width: 4),
-                          Text('${trail.rating}', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    cleanDesc.isNotEmpty ? cleanDesc : (isAr ? 'مسار سياحي وتراثي متكامل يروي أروع القصص والأحداث التاريخية.' : 'Comprehensive historical and heritage tour trail.'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.bodySmall.copyWith(height: 1.5),
-                  ),
-                  const SizedBox(height: 14),
-                  const Divider(color: AppColors.border),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(isAr ? 'يبدأ من' : 'Starts from', style: AppTypography.bodySmall.copyWith(fontSize: 11)),
-                          Text(trail.formattedPrice, style: AppTypography.price.copyWith(fontSize: 17)),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryGold,
-                          foregroundColor: AppColors.textDark,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        ),
-                        onPressed: () => context.push('/experience/${trail.id}'),
-                        icon: const Icon(Icons.visibility_outlined, size: 16),
-                        label: Text(
-                          isAr ? 'استكشف المسار' : 'Explore Trail',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

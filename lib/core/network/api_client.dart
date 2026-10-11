@@ -1,8 +1,13 @@
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart';
 import '../localization/locale_provider.dart';
+import 'mock_api_interceptor.dart';
 
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   return const FlutterSecureStorage();
@@ -27,6 +32,16 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  // Allow self-signed or intermediate staging certificates to prevent SSL handshake aborts
+  dio.httpClientAdapter = IOHttpClientAdapter(
+    createHttpClient: () {
+      final client = HttpClient();
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+      return client;
+    },
+  );
+
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
@@ -41,13 +56,35 @@ final dioProvider = Provider<Dio>((ref) {
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+
+        log('🚀 [DIO REQUEST] ${options.method} ${options.uri}');
         return handler.next(options);
       },
+      onResponse: (response, handler) {
+        log('✅ [DIO RESPONSE ${response.statusCode}] ${response.requestOptions.uri}');
+        final resData = response.data;
+        if (resData is Map) {
+          final s = resData['status'];
+          if (s == 1 || s == true) {
+            log('🟢 [API SUCCESS: status=1] ${response.requestOptions.uri}');
+          } else if (s == 0 || s == false) {
+            log('🔴 [API PROBLEM: status=0] ${response.requestOptions.uri} -> ${resData['message'] ?? resData['code'] ?? 'status: 0'}');
+          }
+        }
+        return handler.next(response);
+      },
       onError: (DioException error, handler) {
+        log('❌ [DIO ERROR] ${error.type} for ${error.requestOptions.uri}: ${error.message}');
+        if (error.response?.data != null) {
+          log('📄 [DIO ERROR DATA] ${error.response?.data}');
+        }
         return handler.next(error);
       },
     ),
   );
+
+  // Fallback to rich mock data when server is completely unreachable or offline
+  dio.interceptors.add(MockApiInterceptor());
 
   return dio;
 });

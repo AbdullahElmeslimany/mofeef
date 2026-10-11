@@ -9,7 +9,8 @@ class ShareHelper {
     required String id,
     String? price,
     String? location,
-    String? type, // 'tour', 'museum', 'event', 'guide', 'car', 'shop', 'location'
+    String?
+        type, // 'tour', 'museum', 'event', 'guide', 'car', 'shop', 'location'
   }) async {
     try {
       final typePath = switch (type) {
@@ -23,13 +24,14 @@ class ShareHelper {
         _ => 'tour',
       };
 
-      final webUrl = 'https://staging.modeefe.com/ar/$typePath/$id';
+      final webUrl = 'https://staging.modeef-e.com/ar/$typePath/$id';
       final appDeepLink = 'modeef://$typePath/$id';
 
       final buffer = StringBuffer();
       buffer.writeln('✨ $title');
       if (category.isNotEmpty) buffer.writeln('🏷️ التصنيف: $category');
-      if (location != null && location.isNotEmpty) buffer.writeln('📍 الموقع: $location');
+      if (location != null && location.isNotEmpty)
+        buffer.writeln('📍 الموقع: $location');
       if (price != null && price.isNotEmpty) buffer.writeln('💰 السعر: $price');
       buffer.writeln();
       buffer.writeln('🔗 تفاصيل التجربة والحجز:');
@@ -42,7 +44,10 @@ class ShareHelper {
       if (context != null && context.mounted) {
         try {
           final box = context.findRenderObject() as RenderBox?;
-          if (box != null && box.hasSize && box.size.width > 0 && box.size.height > 0) {
+          if (box != null &&
+              box.hasSize &&
+              box.size.width > 0 &&
+              box.size.height > 0) {
             origin = box.localToGlobal(Offset.zero) & box.size;
           }
         } catch (_) {}

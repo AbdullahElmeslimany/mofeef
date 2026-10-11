@@ -10,6 +10,9 @@ class CustomButton extends StatelessWidget {
   final IconData? icon;
   final double? width;
   final double height;
+  final Color? backgroundColor;
+  final Color? textColor;
+  final Gradient? gradient;
 
   const CustomButton({
     super.key,
@@ -19,11 +22,17 @@ class CustomButton extends StatelessWidget {
     this.isOutlined = false,
     this.icon,
     this.width,
-    this.height = 54,
+    this.height = 52,
+    this.backgroundColor,
+    this.textColor,
+    this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveBg = backgroundColor ?? AppColors.primaryMauve;
+    final effectiveTextColor = textColor ?? Colors.white;
+
     if (isOutlined) {
       return SizedBox(
         width: width ?? double.infinity,
@@ -31,30 +40,37 @@ class CustomButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: AppColors.primaryGold, width: 1.5),
+            side: BorderSide(
+              color: backgroundColor ?? AppColors.primaryMauve,
+              width: 1.5,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
           ),
           child: isLoading
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      effectiveBg,
+                    ),
                   ),
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (icon != null) ...[
-                      Icon(icon, size: 20, color: AppColors.primaryGold),
+                      Icon(icon, size: 20, color: effectiveBg),
                       const SizedBox(width: 8),
                     ],
                     Text(
                       text,
-                      style: AppTypography.button.copyWith(color: AppColors.primaryGold),
+                      style: AppTypography.button.copyWith(
+                        color: textColor ?? effectiveBg,
+                      ),
                     ),
                   ],
                 ),
@@ -66,13 +82,14 @@ class CustomButton extends StatelessWidget {
       width: width ?? double.infinity,
       height: height,
       decoration: BoxDecoration(
-        gradient: AppColors.goldGradient,
+        color: gradient == null ? effectiveBg : null,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: AppColors.goldGlow,
-            blurRadius: 16,
-            offset: Offset(0, 4),
+            color: effectiveBg.withOpacity(0.28),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -83,22 +100,29 @@ class CustomButton extends StatelessWidget {
           onTap: isLoading ? null : onPressed,
           child: Center(
             child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
+                ? SizedBox(
+                    width: 22,
+                    height: 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.textDark),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        effectiveTextColor,
+                      ),
                     ),
                   )
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (icon != null) ...[
-                        Icon(icon, size: 20, color: AppColors.textDark),
+                        Icon(icon, size: 20, color: effectiveTextColor),
                         const SizedBox(width: 8),
                       ],
-                      Text(text, style: AppTypography.button),
+                      Text(
+                        text,
+                        style: AppTypography.button.copyWith(
+                          color: effectiveTextColor,
+                        ),
+                      ),
                     ],
                   ),
           ),

@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/localization/locale_provider.dart';
 import '../../../core/utils/html_utils.dart';
 import '../../../core/utils/share_helper.dart';
 import '../../wishlist/data/wishlist_repository.dart';
-import '../../../core/widgets/custom_button.dart';
 import '../data/guide_repository.dart';
 
 class GuideDetailScreen extends ConsumerWidget {
@@ -22,7 +21,17 @@ class GuideDetailScreen extends ConsumerWidget {
     final isAr = currentLocale.languageCode == 'ar';
     final guideAsync = ref.watch(guideDetailProvider(guideId));
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Scaffold(
+      backgroundColor: bg,
       body: guideAsync.when(
         data: (guide) {
           final cleanBio = HtmlUtils.stripHtml(guide.title);
@@ -32,13 +41,13 @@ class GuideDetailScreen extends ConsumerWidget {
               CustomScrollView(
                 slivers: [
                   SliverAppBar(
-                    expandedHeight: 300,
+                    expandedHeight: 320,
                     pinned: true,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: bg,
                     leading: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
-                        backgroundColor: Colors.black.withOpacity(0.5),
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
                         child: IconButton(
                           icon:
                               const Icon(Icons.arrow_back, color: Colors.white),
@@ -51,7 +60,7 @@ class GuideDetailScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.5),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: Icon(
                               ref
@@ -63,7 +72,7 @@ class GuideDetailScreen extends ConsumerWidget {
                                       .watch(wishlistProvider)
                                       .isFavorite(guideId, 'guide')
                                   ? AppColors.error
-                                  : AppColors.primaryGold,
+                                  : AppColors.accentGold,
                             ),
                             onPressed: () async {
                               final added = await ref
@@ -89,16 +98,24 @@ class GuideDetailScreen extends ConsumerWidget {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(added
-                                        ? (isAr
-                                            ? 'تمت إضافة المرشد إلى المفضلة ❤️'
-                                            : 'Added guide to favorites ❤️')
-                                        : (isAr
-                                            ? 'تمت إزالة المرشد من المفضلة'
-                                            : 'Removed from favorites')),
+                                    content: Text(
+                                      added
+                                          ? (isAr
+                                              ? 'تمت إضافة المرشد إلى المفضلة ❤️'
+                                              : 'Added guide to favorites ❤️')
+                                          : (isAr
+                                              ? 'تمت إزالة المرشد من المفضلة'
+                                              : 'Removed from favorites'),
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     backgroundColor: added
-                                        ? AppColors.primaryGold
-                                        : AppColors.card,
+                                        ? AppColors.accentGold
+                                        : (isDark
+                                            ? AppColors.darkCard
+                                            : const Color(0xFF333333)),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -111,14 +128,16 @@ class GuideDetailScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.5),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: const Icon(Icons.share_outlined,
-                                color: Colors.white),
+                                color: Colors.white, size: 20),
                             onPressed: () => ShareHelper.shareItem(
                               context: context,
                               title: guide.name,
-                              category: 'مرشد سياحي معتمد',
+                              category: isAr
+                                  ? 'مرشد سياحي معتمد'
+                                  : 'Certified Tour Guide',
                               id: guideId.toString(),
                               price: guide.hourlyRate,
                               location: guide.languages.join(' • '),
@@ -129,14 +148,34 @@ class GuideDetailScreen extends ConsumerWidget {
                       ),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
-                      background: CachedNetworkImage(
-                        imageUrl: guide.imageUrl,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.surface,
-                          child: const Icon(Icons.person,
-                              color: AppColors.primaryGold, size: 80),
-                        ),
+                      background: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: guide.imageUrl,
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) => Container(
+                              color: cardBg,
+                              child: Icon(Icons.person,
+                                  color: AppColors.accentGold, size: 80),
+                            ),
+                          ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.6),
+                                  Colors.transparent,
+                                  bg.withValues(alpha: 0.95),
+                                  bg,
+                                ],
+                                stops: const [0.0, 0.4, 0.85, 1.0],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -151,161 +190,263 @@ class GuideDetailScreen extends ConsumerWidget {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
+                                    horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.goldGlow,
-                                  borderRadius: BorderRadius.circular(8),
+                                  color:
+                                      AppColors.accentGold.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: AppColors.accentGold
+                                        .withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: Text(
-                                  'مرشد سياحي معتمد',
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.primaryGold,
+                                  isAr
+                                      ? 'مرشد سياحي معتمد'
+                                      : 'Certified Tour Guide',
+                                  style: GoogleFonts.cairo(
+                                    color: AppColors.accentGold,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
                               Row(
                                 children: [
                                   const Icon(Icons.star,
-                                      color: AppColors.primaryGold, size: 18),
+                                      color: AppColors.accentGold, size: 18),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${guide.rating}',
-                                    style: AppTypography.titleSmall,
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.bold,
+                                      color: textPrimary,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text(guide.name, style: AppTypography.headingMedium),
+                          Text(
+                            guide.name,
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               _buildChip(
-                                  guide.isAvailable
-                                      ? 'متاح الآن'
-                                      : 'غير متاح حالياً',
-                                  guide.isAvailable
-                                      ? const Color(0xFF2E7D32)
-                                      : AppColors.error),
+                                guide.isAvailable
+                                    ? (isAr ? 'متاح الآن' : 'Available Now')
+                                    : (isAr ? 'غير متاح حالياً' : 'Unavailable'),
+                                guide.isAvailable
+                                    ? const Color(0xFF2E7D32)
+                                    : AppColors.error,
+                              ),
                               if (guide.hasDiscount) ...[
                                 const SizedBox(width: 8),
-                                _buildChip('خصم متاح', AppColors.primaryGold),
+                                _buildChip(
+                                  isAr ? 'خصم متاح' : 'Discount Available',
+                                  AppColors.accentGold,
+                                ),
                               ],
                               if (guide.freeConsultation) ...[
                                 const SizedBox(width: 8),
                                 _buildChip(
-                                    'استشارة مجانية', AppColors.primaryGold),
+                                  isAr
+                                      ? 'استشارة مجانية'
+                                      : 'Free Consultation',
+                                  AppColors.accentGold,
+                                ),
                               ],
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
                           Text(
                             cleanBio.isNotEmpty
                                 ? cleanBio
-                                : 'مرشد سياحي مرخص معتمد يقدم جولات واستشارات ثقافية غنية.',
-                            style:
-                                AppTypography.bodyLarge.copyWith(height: 1.6),
+                                : (isAr
+                                    ? 'مرشد سياحي مرخص معتمد يقدم جولات واستشارات ثقافية غنية ومعلومات تاريخية موثقة.'
+                                    : 'Certified professional tour guide offering rich cultural tours and verified historical insights.'),
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              height: 1.7,
+                              color: textMuted,
+                            ),
                           ),
                           const SizedBox(height: 20),
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.card,
+                              color: cardBg,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: cardBorder),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInfoItem(Icons.translate, 'اللغات',
-                                    guide.languages.join('، ')),
+                                _buildInfoItem(
+                                  Icons.translate,
+                                  isAr ? 'اللغات' : 'Languages',
+                                  guide.languages.join('، '),
+                                  textPrimary,
+                                  textMuted,
+                                ),
                                 Container(
-                                    width: 1,
-                                    height: 40,
-                                    color: AppColors.border),
-                                _buildInfoItem(Icons.tour_outlined, 'الجولات',
-                                    '${guide.toursCount} جولة'),
+                                    width: 1, height: 40, color: cardBorder),
+                                _buildInfoItem(
+                                  Icons.tour_outlined,
+                                  isAr ? 'الجولات' : 'Tours',
+                                  '${guide.toursCount} ${isAr ? "جولة" : "tours"}',
+                                  textPrimary,
+                                  textMuted,
+                                ),
                                 Container(
-                                    width: 1,
-                                    height: 40,
-                                    color: AppColors.border),
-                                _buildInfoItem(Icons.payments_outlined,
-                                    'سعر الساعة', guide.hourlyRate),
+                                    width: 1, height: 40, color: cardBorder),
+                                _buildInfoItem(
+                                  Icons.payments_outlined,
+                                  isAr ? 'سعر الساعة' : 'Rate/hr',
+                                  guide.hourlyRate,
+                                  textPrimary,
+                                  textMuted,
+                                ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Text('خدمات الإرشاد السياحي',
-                              style: AppTypography.titleLarge),
+                          Text(
+                            isAr
+                                ? 'خدمات الإرشاد السياحي'
+                                : 'Guide Services & Expertise',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildServiceTile(
-                              Icons.directions_walk,
-                              'جولات ميدانية خاصة',
-                              'مرافقة حية للمواقع الأثرية وشرح تاريخي موثق.'),
+                            Icons.directions_walk,
+                            isAr ? 'جولات ميدانية خاصة' : 'Private Field Tours',
+                            isAr
+                                ? 'مرافقة حية للمواقع الأثرية وشرح تاريخي موثق.'
+                                : 'Live accompanying to archaeological sites with verified historical narratives.',
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textMuted,
+                          ),
                           const SizedBox(height: 10),
                           _buildServiceTile(
-                              Icons.support_agent,
-                              'استشارات تخطيط المسارات',
-                              'مساعدتك في تصميم جدول سياحي متكامل في المملكة.'),
+                            Icons.support_agent,
+                            isAr
+                                ? 'استشارات تخطيط المسارات'
+                                : 'Itinerary & Route Planning',
+                            isAr
+                                ? 'مساعدتك في تصميم جدول سياحي متكامل في المملكة.'
+                                : 'Expert guidance in tailoring comprehensive travel schedules across Saudi Arabia.',
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textMuted,
+                          ),
                           if (guide.museums.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            Text('جولات ومتاحف المرشد',
-                                style: AppTypography.titleLarge),
+                            Text(
+                              isAr
+                                  ? 'جولات ومتاحف المرشد'
+                                  : 'Associated Museums & Tours',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 190,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
                                 itemCount: guide.museums.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(width: 12),
                                 itemBuilder: (context, index) =>
                                     _buildHomeStyleCard(
-                                        context, guide.museums[index], 'متحف'),
+                                  context,
+                                  guide.museums[index],
+                                  'متحف',
+                                  cardBg,
+                                  cardBorder,
+                                  textPrimary,
+                                  textMuted,
+                                ),
                               ),
                             ),
                           ],
                           if (guide.events.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            Text('فعاليات المرشد',
-                                style: AppTypography.titleLarge),
+                            Text(
+                              isAr ? 'فعاليات المرشد' : 'Associated Events',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 200,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
                                 itemCount: guide.events.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(width: 12),
                                 itemBuilder: (context, index) =>
                                     _buildHomeStyleCard(
-                                        context, guide.events[index], 'فعالية'),
+                                  context,
+                                  guide.events[index],
+                                  'فعالية',
+                                  cardBg,
+                                  cardBorder,
+                                  textPrimary,
+                                  textMuted,
+                                ),
                               ),
                             ),
                           ],
                           if (guide.relatedGuides.isNotEmpty) ...[
                             const SizedBox(height: 24),
-                            Text('مرشدون آخرون',
-                                style: AppTypography.titleLarge),
+                            Text(
+                              isAr ? 'مرشدون آخرون' : 'Other Certified Guides',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 190,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
                                 itemCount: guide.relatedGuides.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(width: 12),
                                 itemBuilder: (context, index) =>
-                                    _buildHomeStyleCard(context,
-                                        guide.relatedGuides[index], 'مرشد'),
+                                    _buildHomeStyleCard(
+                                  context,
+                                  guide.relatedGuides[index],
+                                  'مرشد',
+                                  cardBg,
+                                  cardBorder,
+                                  textPrimary,
+                                  textMuted,
+                                ),
                               ),
                             ),
                           ],
@@ -316,6 +457,7 @@ class GuideDetailScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              // Bottom Sticky Bar matching Figma
               Positioned(
                 left: 0,
                 right: 0,
@@ -323,9 +465,16 @@ class GuideDetailScreen extends ConsumerWidget {
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.border)),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    border: Border(top: BorderSide(color: cardBorder)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
                   child: SafeArea(
                     child: Row(
@@ -334,24 +483,61 @@ class GuideDetailScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('التكلفة التقريبية',
-                                style: AppTypography.bodySmall),
-                            Text(guide.hourlyRate, style: AppTypography.price),
+                            Text(
+                              isAr ? 'التكلفة التقريبية' : 'Estimated Rate',
+                              style: GoogleFonts.cairo(
+                                fontSize: 11,
+                                color: textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              guide.hourlyRate,
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.accentGold,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(width: 24),
                         Expanded(
-                          child: CustomButton(
-                            text: 'حجز واستشارة المرشد',
+                          child: ElevatedButton(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                      'تم إرسال طلب الحجز للمرشد ${guide.name} بنجاح!'),
-                                  backgroundColor: AppColors.success,
+                                    isAr
+                                        ? 'تم إرسال طلب الحجز للمرشد ${guide.name} بنجاح!'
+                                        : 'Booking request sent to guide ${guide.name} successfully!',
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  backgroundColor: AppColors.primaryMauve,
                                 ),
                               );
                             },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryMauve,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text(
+                              isAr
+                                  ? 'حجز واستشارة المرشد'
+                                  : 'Book & Consult Guide',
+                              style: GoogleFonts.cairo(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -362,85 +548,130 @@ class GuideDetailScreen extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryGold)),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('تعذر تحميل تفاصيل المرشد', style: AppTypography.titleLarge),
-              if (err.toString().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+        loading: () => Scaffold(
+          backgroundColor: bg,
+          body: const Center(
+              child: CircularProgressIndicator(color: AppColors.accentGold)),
+        ),
+        error: (err, _) => Scaffold(
+          backgroundColor: bg,
+          appBar: AppBar(backgroundColor: Colors.transparent),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  isAr ? 'تعذر تحميل تفاصيل المرشد' : 'Failed to load guide details',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+                if (err.toString().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      err.toString(),
+                      style: GoogleFonts.cairo(fontSize: 12, color: textMuted),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => ref.refresh(guideDetailProvider(guideId)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMauve,
+                    foregroundColor: Colors.white,
+                  ),
                   child: Text(
-                    err.toString(),
-                    style: AppTypography.bodySmall,
-                    textAlign: TextAlign.center,
+                    isAr ? 'إعادة المحاولة' : 'Retry',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.refresh(guideDetailProvider(guideId)),
-                child: const Text('إعادة المحاولة'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String title, String value) {
+  Widget _buildInfoItem(IconData icon, String title, String value,
+      Color textPrimary, Color textMuted) {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primaryGold, size: 20),
+          Icon(icon, color: AppColors.accentGold, size: 20),
           const SizedBox(height: 4),
-          Text(title,
-              style: AppTypography.bodySmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
+          Text(
+            title,
+            style: GoogleFonts.cairo(fontSize: 11, color: textMuted),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           const SizedBox(height: 2),
           Text(
             value,
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.titleSmall,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: textPrimary,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildServiceTile(IconData icon, String title, String desc) {
+  Widget _buildServiceTile(
+      IconData icon,
+      String title,
+      String desc,
+      Color cardBg,
+      Color cardBorder,
+      Color textPrimary,
+      Color textMuted) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cardBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: cardBorder),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.goldGlow,
+              color: AppColors.accentGold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: AppColors.primaryGold, size: 22),
+            child: Icon(icon, color: AppColors.accentGold, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTypography.titleSmall),
+                Text(
+                  title,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(desc, style: AppTypography.bodySmall),
+                Text(
+                  desc,
+                  style: GoogleFonts.cairo(fontSize: 12, color: textMuted),
+                ),
               ],
             ),
           ),
@@ -458,15 +689,25 @@ class GuideDetailScreen extends ConsumerWidget {
       ),
       child: Text(
         text,
-        style:
-            TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+        style: GoogleFonts.cairo(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
 
   Widget _buildHomeStyleCard(
-      BuildContext context, Map<String, dynamic> item, String type) {
-    final title = item['title']?.toString() ?? item['name']?.toString() ?? type;
+      BuildContext context,
+      Map<String, dynamic> item,
+      String type,
+      Color cardBg,
+      Color cardBorder,
+      Color textPrimary,
+      Color textMuted) {
+    final title =
+        item['title']?.toString() ?? item['name']?.toString() ?? type;
     final rawPrice = item['sale_price']?.toString() ??
         item['price']?.toString() ??
         item['price_per_hour']?.toString();
@@ -486,9 +727,9 @@ class GuideDetailScreen extends ConsumerWidget {
       child: Container(
         width: 220,
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: cardBg,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: cardBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,16 +745,16 @@ class GuideDetailScreen extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => Container(
                         height: 110,
-                        color: AppColors.surface,
+                        color: cardBg,
                         child: Icon(_iconFor(type),
-                            color: AppColors.primaryGold, size: 36),
+                            color: AppColors.accentGold, size: 36),
                       ),
                     )
                   : Container(
                       height: 110,
-                      color: AppColors.surface,
+                      color: cardBg,
                       child: Icon(_iconFor(type),
-                          color: AppColors.primaryGold, size: 36),
+                          color: AppColors.accentGold, size: 36),
                     ),
             ),
             Padding(
@@ -525,7 +766,11 @@ class GuideDetailScreen extends ConsumerWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.titleSmall,
+                    style: GoogleFonts.cairo(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -538,13 +783,18 @@ class GuideDetailScreen extends ConsumerWidget {
                               : type,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodySmall,
+                          style:
+                              GoogleFonts.cairo(fontSize: 11, color: textMuted),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         priceText,
-                        style: AppTypography.price.copyWith(fontSize: 13),
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
                       ),
                     ],
                   ),

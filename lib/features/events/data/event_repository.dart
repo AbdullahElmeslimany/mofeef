@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_response_handler.dart';
 import '../../../../core/utils/html_utils.dart';
 import '../../tours/data/models/tour_model.dart';
 
@@ -87,6 +88,8 @@ class EventItemModel {
   });
 
   double get priceNum => salePrice ?? priceNumeric;
+  String get locationName => location;
+  double get rating => 4.8;
 
   factory EventItemModel.fromJson(Map<String, dynamic> map) {
     final rawPrice = double.tryParse(map['price']?.toString() ?? '150') ?? 150.0;
@@ -169,8 +172,7 @@ class EventRepositoryImpl implements EventRepository {
           'limit': 12,
         },
       );
-      final data = response.data;
-      final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
+      final list = ApiResponseHandler.extractList(response.data);
       return list.map((e) => EventItemModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
@@ -181,8 +183,8 @@ class EventRepositoryImpl implements EventRepository {
   Future<EventItemModel> getEventDetail(dynamic id) async {
     try {
       final response = await _dio.get(ApiEndpoints.eventDetail(id));
-      final map = response.data is Map && response.data['data'] != null ? response.data['data'] as Map<String, dynamic> : response.data as Map<String, dynamic>;
-      return EventItemModel.fromJson(map);
+      final map = ApiResponseHandler.getDataOrThrow(response.data, 'لم يتم العثور على بيانات الفعالية');
+      return EventItemModel.fromJson(map as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }

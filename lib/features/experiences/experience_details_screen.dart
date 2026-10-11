@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
 import '../../core/localization/locale_provider.dart';
 import '../../core/utils/html_utils.dart';
-import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/image_viewer_dialog.dart';
 import '../booking/data/booking_draft.dart';
 import '../tours/data/models/tour_model.dart';
@@ -33,6 +32,7 @@ class ExperienceDetailsScreen extends ConsumerStatefulWidget {
 class _ExperienceDetailsScreenState
     extends ConsumerState<ExperienceDetailsScreen> {
   int _currentGalleryIndex = 0;
+  int _selectedTab = 0; // 0: نظرة عامة, 1: التفاصيل, 2: المرشد, 3: التقييمات
   final PageController _pageController = PageController();
 
   @override
@@ -58,8 +58,17 @@ class _ExperienceDetailsScreenState
     final tourAsync = ref.watch(tourDetailProvider(widget.experienceId));
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Scaffold(
+      backgroundColor: bg,
       body: tourAsync.when(
         data: (tour) {
           final images = tour.gallery.isNotEmpty
@@ -78,7 +87,7 @@ class _ExperienceDetailsScreenState
                   SliverAppBar(
                     expandedHeight: 380,
                     pinned: true,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: bg,
                     leading: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
@@ -128,7 +137,7 @@ class _ExperienceDetailsScreenState
                                       .watch(wishlistProvider)
                                       .isFavorite(widget.experienceId, 'tour')
                                   ? AppColors.error
-                                  : AppColors.primaryGold,
+                                  : AppColors.accentGold,
                             ),
                             onPressed: () async {
                               final added = await ref
@@ -151,16 +160,22 @@ class _ExperienceDetailsScreenState
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(added
-                                        ? (isAr
-                                            ? 'تمت إضافة المسار إلى المفضلة ❤️'
-                                            : 'Added trail to favorites ❤️')
-                                        : (isAr
-                                            ? 'تمت إزالة المسار من المفضلة'
-                                            : 'Removed from favorites')),
+                                    content: Text(
+                                      added
+                                          ? (isAr
+                                              ? 'تمت إضافة المسار إلى المفضلة ❤️'
+                                              : 'Added trail to favorites ❤️')
+                                          : (isAr
+                                              ? 'تمت إزالة المسار من المفضلة'
+                                              : 'Removed from favorites'),
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     backgroundColor: added
-                                        ? AppColors.primaryGold
-                                        : AppColors.card,
+                                        ? AppColors.accentGold
+                                        : (isDark ? AppColors.darkCard : const Color(0xFF333333)),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -187,15 +202,15 @@ class _ExperienceDetailsScreenState
                                   imageUrl: images[index],
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Container(
-                                    color: AppColors.surface,
-                                    child: const Icon(Icons.image_not_supported,
-                                        color: AppColors.textMuted),
+                                    color: cardBg,
+                                    child: Icon(Icons.image_not_supported,
+                                        color: textMuted),
                                   ),
                                 ),
                               );
                             },
                           ),
-                          // Dark gradient overlay
+                          // Dark gradient overlay transitioning smoothly to bg
                           DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -204,43 +219,33 @@ class _ExperienceDetailsScreenState
                                 colors: [
                                   Colors.black.withOpacity(0.6),
                                   Colors.transparent,
-                                  AppColors.background.withOpacity(0.95),
-                                  AppColors.background,
+                                  bg.withOpacity(0.95),
+                                  bg,
                                 ],
                                 stops: const [0.0, 0.4, 0.85, 1.0],
                               ),
                             ),
                           ),
-                          // Image Counter Badge (📸 1/5)
+                          // Dots indicator matching Figma
                           Positioned(
-                            bottom: 20,
-                            left: isAr ? 20 : null,
-                            right: isAr ? null : 20,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    color:
-                                        AppColors.primaryGold.withOpacity(0.5)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.photo_library_outlined,
-                                      color: AppColors.primaryGold, size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${_currentGalleryIndex + 1} / ${images.length}',
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold),
+                            bottom: 16,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(images.length.clamp(1, 6), (i) {
+                                final isAct = _currentGalleryIndex == i;
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: isAct ? 24 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: isAct ? Colors.white : Colors.white.withOpacity(0.4),
+                                    borderRadius: BorderRadius.circular(3),
                                   ),
-                                ],
-                              ),
+                                );
+                              }),
                             ),
                           ),
                         ],
@@ -302,125 +307,357 @@ class _ExperienceDetailsScreenState
                             const SizedBox(height: 16),
                           ],
 
-                          // Category and Location Badge
+                          // Category Tags matching Figma
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                    horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: AppColors.goldGlow,
+                                  color: isDark
+                                      ? const Color(0xFF261C30)
+                                      : const Color(0xFFEADFF2),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color: AppColors.primaryGold
-                                          .withOpacity(0.4)),
+                                ),
+                                child: Text(
+                                  isAr ? 'تجربة' : 'Experience',
+                                  style: GoogleFonts.cairo(
+                                    color: isDark
+                                        ? const Color(0xFFD4C7DF)
+                                        : const Color(0xFF533C5E),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF261C30)
+                                      : const Color(0xFFEADFF2),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   tour.categoryName ??
-                                      (isAr
-                                          ? 'مسار سياحي وتراثي'
-                                          : 'Tourist Trail'),
-                                  style: const TextStyle(
-                                      color: AppColors.primaryGold,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
+                                      (isAr ? 'مغامرات ونجوم' : 'Adventures & Stars'),
+                                  style: GoogleFonts.cairo(
+                                    color: isDark
+                                        ? const Color(0xFFD4C7DF)
+                                        : const Color(0xFF533C5E),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                              if (tour.locationName != null) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.card,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppColors.border),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.location_on_outlined,
-                                          color: AppColors.textMuted, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        tour.locationName!,
-                                        style: AppTypography.bodySmall.copyWith(
-                                            color: AppColors.textPrimary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
 
                           const SizedBox(height: 12),
 
                           // Title
-                          Text(tour.title, style: AppTypography.headingMedium),
+                          Text(
+                            tour.title,
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                              height: 1.3,
+                            ),
+                          ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
 
-                          // Rating and Duration Specs Grid
+                          // Location and Guide Info Row
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined,
+                                  size: 16, color: AppColors.accentGold),
+                              const SizedBox(width: 4),
+                              Text(
+                                tour.locationName ?? (isAr ? 'العلا' : 'AlUla'),
+                                style: GoogleFonts.cairo(
+                                    fontSize: 13, color: textMuted),
+                              ),
+                              const SizedBox(width: 14),
+                              const Icon(Icons.verified,
+                                  size: 16, color: AppColors.accentGold),
+                              const SizedBox(width: 4),
+                              Text(
+                                tour.author != null && tour.author!.isNotEmpty
+                                    ? (isAr ? 'مع ${tour.author}' : 'With ${tour.author}')
+                                    : (isAr ? 'مع نور الغامدي' : 'With Certified Guide'),
+                                style: GoogleFonts.cairo(
+                                    fontSize: 13, color: textMuted),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // Action Buttons Row (احجز التجربة, أضف لرحلتي +, favorite)
+                          Row(
+                            children: [
+                              // 1. احجز التجربة Button (Mauve)
+                              Expanded(
+                                flex: 3,
+                                child: ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _showBookingModal(context, tour, isAr),
+                                  icon: const Icon(Icons.calendar_month_outlined,
+                                      size: 18),
+                                  label: Text(
+                                    isAr ? 'احجز التجربة' : 'Book Experience',
+                                    style: GoogleFonts.cairo(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryMauve,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // 2. أضف لرحلتي Outlined Button
+                              Expanded(
+                                flex: 3,
+                                child: OutlinedButton(
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isAr
+                                              ? 'تمت إضافة التجربة إلى جدول رحلتك'
+                                              : 'Added to itinerary plan',
+                                          style: GoogleFonts.cairo(
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        backgroundColor: AppColors.primaryMauve,
+                                      ),
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(color: cardBorder),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16)),
+                                  ),
+                                  child: Text(
+                                    isAr ? 'أضف لرحلتي +' : '+ Add to Trip',
+                                    style: GoogleFonts.cairo(
+                                      color: textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              // 3. Favorite Heart Button
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: cardBorder),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(
+                                    ref
+                                            .watch(wishlistProvider)
+                                            .isFavorite(widget.experienceId, 'tour')
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: ref
+                                            .watch(wishlistProvider)
+                                            .isFavorite(widget.experienceId, 'tour')
+                                        ? AppColors.error
+                                        : textPrimary,
+                                    size: 22,
+                                  ),
+                                  onPressed: () async {
+                                    await ref
+                                        .read(wishlistProvider.notifier)
+                                        .toggleFavorite(
+                                          WishlistItemModel(
+                                            id: int.tryParse(widget.experienceId) ??
+                                                0,
+                                            objectId:
+                                                int.tryParse(widget.experienceId) ??
+                                                    0,
+                                            objectModel: 'tour',
+                                            title: tour.title,
+                                            imageUrl: tour.imageUrl,
+                                            price: tour.salePrice ?? tour.price,
+                                            location: tour.locationName ??
+                                                tour.address,
+                                          ),
+                                        );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Segmented Navigation Tabs Bar with Gold Active Indicator
                           Container(
-                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.card,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: AppColors.border),
+                              border: Border(
+                                  bottom: BorderSide(
+                                      color: cardBorder, width: 1)),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInfoItem(
-                                    Icons.star,
-                                    isAr ? 'التقييم' : 'Rating',
-                                    '${tour.rating} (${tour.reviewsCount})'),
-                                Container(
-                                    width: 1,
-                                    height: 32,
-                                    color: AppColors.border),
-                                _buildInfoItem(
-                                    Icons.schedule,
-                                    isAr ? 'المدة' : 'Duration',
-                                    tour.duration ??
-                                        (isAr ? '٤-٦ ساعات' : '4-6 hours')),
-                                Container(
-                                    width: 1,
-                                    height: 32,
-                                    color: AppColors.border),
-                                _buildInfoItem(
-                                    Icons.groups_outlined,
-                                    isAr ? 'المجموعة' : 'Group',
-                                    isAr ? 'خاصة أو عائلية' : 'Private/Family'),
+                                _buildNavTab(0, isAr ? 'نظرة عامة' : 'Overview',
+                                    textPrimary, textMuted),
+                                _buildNavTab(1, isAr ? 'التفاصيل' : 'Details',
+                                    textPrimary, textMuted),
+                                _buildNavTab(2, isAr ? 'المرشد' : 'Guide',
+                                    textPrimary, textMuted),
+                                _buildNavTab(3, isAr ? 'التقييمات' : 'Reviews',
+                                    textPrimary, textMuted),
                               ],
                             ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          // 3 Feature Cards in a Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildFeatureBox(
+                                  icon: Icons.people_outline,
+                                  title: tour.author != null &&
+                                          tour.author!.isNotEmpty
+                                      ? tour.author!
+                                      : (isAr ? 'نور الغامدي' : 'Host'),
+                                  subtitle: isAr ? 'المرشدة' : 'Guide',
+                                  cardBg: cardBg,
+                                  cardBorder: cardBorder,
+                                  textPrimary: textPrimary,
+                                  textMuted: textMuted,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildFeatureBox(
+                                  icon: Icons.location_on_outlined,
+                                  title: tour.locationName ??
+                                      (isAr ? 'العلا' : 'AlUla'),
+                                  subtitle: isAr ? 'الموقع' : 'Location',
+                                  cardBg: cardBg,
+                                  cardBorder: cardBorder,
+                                  textPrimary: textPrimary,
+                                  textMuted: textMuted,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildFeatureBox(
+                                  icon: Icons.calendar_month_outlined,
+                                  title: tour.duration ??
+                                      (isAr ? 'حسب التوفر' : 'Flexible'),
+                                  subtitle: isAr ? 'المواعيد' : 'Schedule',
+                                  cardBg: cardBg,
+                                  cardBorder: cardBorder,
+                                  textPrimary: textPrimary,
+                                  textMuted: textMuted,
+                                ),
+                              ),
+                            ],
                           ),
 
                           const SizedBox(height: 24),
 
                           // Description / About Tour
                           Text(
-                              isAr
-                                  ? 'عن المسار والتجربة'
-                                  : 'About the Trail & Experience',
-                              style: AppTypography.titleLarge),
+                            isAr ? 'عن التجربة' : 'About Experience',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             HtmlUtils.stripHtml(tour.content ?? ''),
-                            style:
-                                AppTypography.bodyLarge.copyWith(height: 1.7),
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              height: 1.7,
+                              color: textMuted,
+                            ),
                           ),
+
+                          const SizedBox(height: 24),
+
+                          // What's Included Section matching Figma
+                          Text(
+                            isAr ? 'ماذا تتضمّن التجربة' : "What's Included",
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInclusionItem(
+                              isAr
+                                  ? 'مرشدة معتمدة بخبرة 5 سنوات'
+                                  : 'Certified guide with 5+ years experience',
+                              isDark,
+                              textPrimary),
+                          const SizedBox(height: 10),
+                          _buildInclusionItem(
+                              isAr
+                                  ? 'تأكيد موعد ومكان التجمّع بعد الحجز'
+                                  : 'Confirmation of meeting point after booking',
+                              isDark,
+                              textPrimary),
+                          const SizedBox(height: 10),
+                          _buildInclusionItem(
+                              isAr
+                                  ? 'يمكن إضافتها إلى خطة رحلتك'
+                                  : 'Can be added to your custom itinerary',
+                              isDark,
+                              textPrimary),
+                          if (tour.includes.isNotEmpty) ...[
+                            ...tour.includes.map((inc) => Padding(
+                                  padding: const EdgeInsets.only(top: 10),
+                                  child: _buildInclusionItem(
+                                      inc, isDark, textPrimary),
+                                )),
+                          ],
 
                           const SizedBox(height: 24),
 
                           // Itinerary / Timeline Stages
                           if (tour.itinerary.isNotEmpty) ...[
                             Text(
-                                isAr
-                                    ? 'محطات ومراحل المسار'
-                                    : 'Itinerary & Route Stages',
-                                style: AppTypography.titleLarge),
+                              isAr
+                                  ? 'محطات ومراحل المسار'
+                                  : 'Itinerary & Route Stages',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 14),
                             ListView.separated(
                               shrinkWrap: true,
@@ -439,9 +676,9 @@ class _ExperienceDetailsScreenState
                                 return Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppColors.card,
+                                    color: cardBg,
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppColors.border),
+                                    border: Border.all(color: cardBorder),
                                   ),
                                   child: Row(
                                     crossAxisAlignment:
@@ -450,16 +687,18 @@ class _ExperienceDetailsScreenState
                                       Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
-                                          color: AppColors.goldGlow,
+                                          color: AppColors.accentGold
+                                              .withOpacity(0.15),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           '${index + 1}',
-                                          style: const TextStyle(
-                                              color: AppColors.primaryGold,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16),
+                                          style: GoogleFonts.cairo(
+                                            color: AppColors.accentGold,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 14),
@@ -468,24 +707,37 @@ class _ExperienceDetailsScreenState
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(stageTitle,
-                                                style:
-                                                    AppTypography.titleSmall),
+                                            Text(
+                                              stageTitle,
+                                              style: GoogleFonts.cairo(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: textPrimary,
+                                              ),
+                                            ),
                                             if (stageDesc != null &&
                                                 stageDesc.isNotEmpty) ...[
                                               const SizedBox(height: 4),
-                                              Text(stageDesc,
-                                                  style: AppTypography.bodySmall
-                                                      .copyWith(
-                                                          color: AppColors
-                                                              .primaryGold)),
+                                              Text(
+                                                stageDesc,
+                                                style: GoogleFonts.cairo(
+                                                  fontSize: 12,
+                                                  color: AppColors.accentGold,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
                                             ],
                                             if (stageContent != null &&
                                                 stageContent.isNotEmpty) ...[
                                               const SizedBox(height: 6),
-                                              Text(stageContent,
-                                                  style: AppTypography.bodySmall
-                                                      .copyWith(height: 1.5)),
+                                              Text(
+                                                stageContent,
+                                                style: GoogleFonts.cairo(
+                                                  fontSize: 13,
+                                                  height: 1.5,
+                                                  color: textMuted,
+                                                ),
+                                              ),
                                             ],
                                           ],
                                         ),
@@ -519,26 +771,35 @@ class _ExperienceDetailsScreenState
                           if (tour.includes.isNotEmpty ||
                               tour.excludes.isNotEmpty) ...[
                             Text(
-                                isAr
-                                    ? 'تفاصيل باقة الحجز'
-                                    : 'Package Inclusions & Exclusions',
-                                style: AppTypography.titleLarge),
+                              isAr
+                                  ? 'تفاصيل باقة الحجز'
+                                  : 'Package Inclusions & Exclusions',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: cardBg,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: cardBorder),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (tour.includes.isNotEmpty) ...[
-                                    Text(isAr ? 'تشمل الرحلة:' : 'Includes:',
-                                        style: AppTypography.titleSmall
-                                            .copyWith(
-                                                color: AppColors.success)),
+                                    Text(
+                                      isAr ? 'تشمل الرحلة:' : 'Includes:',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.success,
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     ...tour.includes.map(
                                       (inc) => Padding(
@@ -552,9 +813,13 @@ class _ExperienceDetailsScreenState
                                                 size: 16),
                                             const SizedBox(width: 8),
                                             Expanded(
-                                                child: Text(inc,
-                                                    style: AppTypography
-                                                        .bodyMedium)),
+                                              child: Text(
+                                                inc,
+                                                style: GoogleFonts.cairo(
+                                                    fontSize: 13,
+                                                    color: textPrimary),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -562,11 +827,15 @@ class _ExperienceDetailsScreenState
                                   ],
                                   if (tour.excludes.isNotEmpty) ...[
                                     if (tour.includes.isNotEmpty)
-                                      const Divider(
-                                          color: AppColors.border, height: 20),
-                                    Text(isAr ? 'لا تشمل الرحلة:' : 'Excludes:',
-                                        style: AppTypography.titleSmall
-                                            .copyWith(color: AppColors.error)),
+                                      Divider(color: cardBorder, height: 20),
+                                    Text(
+                                      isAr ? 'لا تشمل الرحلة:' : 'Excludes:',
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.error,
+                                      ),
+                                    ),
                                     const SizedBox(height: 8),
                                     ...tour.excludes.map(
                                       (exc) => Padding(
@@ -579,9 +848,13 @@ class _ExperienceDetailsScreenState
                                                 size: 16),
                                             const SizedBox(width: 8),
                                             Expanded(
-                                                child: Text(exc,
-                                                    style: AppTypography
-                                                        .bodyMedium)),
+                                              child: Text(
+                                                exc,
+                                                style: GoogleFonts.cairo(
+                                                    fontSize: 13,
+                                                    color: textPrimary),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -596,10 +869,15 @@ class _ExperienceDetailsScreenState
                           // FAQs
                           if (tour.faqs.isNotEmpty) ...[
                             Text(
-                                isAr
-                                    ? 'الأسئلة الشائعة'
-                                    : 'Frequently Asked Questions',
-                                style: AppTypography.titleLarge),
+                              isAr
+                                  ? 'الأسئلة الشائعة'
+                                  : 'Frequently Asked Questions',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             ListView.separated(
                               shrinkWrap: true,
@@ -611,24 +889,34 @@ class _ExperienceDetailsScreenState
                                 final faq = tour.faqs[index];
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: AppColors.card,
+                                    color: cardBg,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: AppColors.border),
+                                    border: Border.all(color: cardBorder),
                                   ),
                                   child: ExpansionTile(
-                                    iconColor: AppColors.primaryGold,
-                                    collapsedIconColor: AppColors.textSecondary,
-                                    title: Text(faq.getDisplayTitle(isAr),
-                                        style: AppTypography.titleSmall),
+                                    iconColor: AppColors.accentGold,
+                                    collapsedIconColor: textMuted,
+                                    title: Text(
+                                      faq.getDisplayTitle(isAr),
+                                      style: GoogleFonts.cairo(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: textPrimary,
+                                      ),
+                                    ),
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.fromLTRB(
                                             16, 0, 16, 14),
                                         child: Text(
-                                            HtmlUtils.stripHtml(
-                                                faq.getDisplayContent(isAr)),
-                                            style: AppTypography.bodyMedium
-                                                .copyWith(height: 1.5)),
+                                          HtmlUtils.stripHtml(
+                                              faq.getDisplayContent(isAr)),
+                                          style: GoogleFonts.cairo(
+                                            fontSize: 13,
+                                            height: 1.6,
+                                            color: textMuted,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -640,24 +928,30 @@ class _ExperienceDetailsScreenState
 
                           // Interactive Google Map Section
                           Text(
-                              isAr
-                                  ? 'الموقع الجغرافي والوصول'
-                                  : 'Location & Directions',
-                              style: AppTypography.titleLarge),
+                            isAr
+                                ? 'الموقع الجغرافي والوصول'
+                                : 'Location & Directions',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           GestureDetector(
                             onTap: () => _openMap(tour),
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: cardBg,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                     color:
-                                        AppColors.primaryGold.withOpacity(0.5)),
+                                        AppColors.accentGold.withOpacity(0.4)),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withOpacity(
+                                        isDark ? 0.3 : 0.05),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -668,11 +962,12 @@ class _ExperienceDetailsScreenState
                                   Container(
                                     padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(
-                                      color: AppColors.goldGlow,
+                                      color: AppColors.accentGold
+                                          .withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     child: const Icon(Icons.directions_outlined,
-                                        color: AppColors.primaryGold, size: 28),
+                                        color: AppColors.accentGold, size: 28),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
@@ -688,25 +983,28 @@ class _ExperienceDetailsScreenState
                                                   : 'Trail Location'),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              color: AppColors.textPrimary,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14),
+                                          style: GoogleFonts.cairo(
+                                            color: textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           isAr
                                               ? 'انقر لفتح الاتجاهات المباشرة عبر خرائط Google'
                                               : 'Tap to open directions in Google Maps',
-                                          style: const TextStyle(
-                                              color: AppColors.primaryGold,
-                                              fontSize: 11),
+                                          style: GoogleFonts.cairo(
+                                            color: AppColors.accentGold,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                   const Icon(Icons.open_in_new,
-                                      color: AppColors.primaryGold, size: 20),
+                                      color: AppColors.accentGold, size: 20),
                                 ],
                               ),
                             ),
@@ -719,47 +1017,72 @@ class _ExperienceDetailsScreenState
                 ],
               ),
 
-              // Bottom Sticky Booking Bar
+              // Bottom Sticky Booking Bar matching Figma
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    border:
-                        const Border(top: BorderSide(color: AppColors.border)),
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    border: Border(top: BorderSide(color: cardBorder)),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 12,
-                          offset: const Offset(0, -4)),
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
                     ],
                   ),
                   child: SafeArea(
+                    top: false,
                     child: Row(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(isAr ? 'السعر يبدأ من' : 'Starts from',
-                                style: AppTypography.bodySmall),
-                            Text(tour.formattedPrice,
-                                style: AppTypography.price),
-                          ],
-                        ),
-                        const SizedBox(width: 20),
                         Expanded(
-                          child: CustomButton(
-                            text: isAr
-                                ? 'حجز التذكرة والموعد'
-                                : 'Book Tickets & Date',
+                          child: ElevatedButton(
                             onPressed: () =>
                                 _showBookingModal(context, tour, isAr),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryMauve,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text(
+                              isAr ? 'احجز التجربة' : 'Book Experience',
+                              style: GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
                           ),
+                        ),
+                        const SizedBox(width: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              isAr ? 'السعر للشخص' : 'Price per person',
+                              style: GoogleFonts.cairo(
+                                fontSize: 11,
+                                color: textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              tour.formattedPrice,
+                              style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: AppColors.accentGold,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -769,12 +1092,14 @@ class _ExperienceDetailsScreenState
             ],
           );
         },
-        loading: () => const Scaffold(
-          body: Center(
-              child: CircularProgressIndicator(color: AppColors.primaryGold)),
+        loading: () => Scaffold(
+          backgroundColor: bg,
+          body: const Center(
+              child: CircularProgressIndicator(color: AppColors.accentGold)),
         ),
         error: (err, _) => Scaffold(
-          appBar: AppBar(),
+          backgroundColor: bg,
+          appBar: AppBar(backgroundColor: Colors.transparent),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -783,15 +1108,25 @@ class _ExperienceDetailsScreenState
                     size: 54, color: AppColors.error),
                 const SizedBox(height: 16),
                 Text(
-                    isAr
-                        ? 'تعذر تحميل تفاصيل المسار'
-                        : 'Failed to load trail details',
-                    style: AppTypography.titleLarge),
+                  isAr
+                      ? 'تعذر تحميل تفاصيل المسار'
+                      : 'Failed to load trail details',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () =>
                       ref.refresh(tourDetailProvider(widget.experienceId)),
-                  child: Text(isAr ? 'إعادة المحاولة' : 'Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMauve,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(isAr ? 'إعادة المحاولة' : 'Retry',
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -802,10 +1137,11 @@ class _ExperienceDetailsScreenState
   }
 
   void _showBookingModal(BuildContext context, TourModel tour, bool isAr) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -894,14 +1230,107 @@ class _ExperienceDetailsScreenState
     return clean;
   }
 
-  Widget _buildInfoItem(IconData icon, String title, String value) {
-    return Column(
+  Widget _buildNavTab(
+      int index, String title, Color textPrimary, Color textMuted) {
+    final isSelected = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.cairo(
+                color: isSelected ? textPrimary : textMuted,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 3,
+              width: 38,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.accentGold : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureBox({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color cardBg,
+    required Color cardBorder,
+    required Color textPrimary,
+    required Color textMuted,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardBorder),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppColors.accentGold, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: GoogleFonts.cairo(color: textMuted, fontSize: 11),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInclusionItem(String text, bool isDark, Color textPrimary) {
+    return Row(
       children: [
-        Icon(icon, color: AppColors.primaryGold, size: 20),
-        const SizedBox(height: 4),
-        Text(title, style: AppTypography.bodySmall),
-        const SizedBox(height: 2),
-        Text(value, style: AppTypography.titleSmall),
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF261C30) : const Color(0xFFEADFF2),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            Icons.check,
+            size: 16,
+            color: isDark ? Colors.white : const Color(0xFF533C5E),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              color: textPrimary,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -962,6 +1391,13 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
   Widget build(BuildContext context) {
     final isAr = widget.isAr;
     final total = _calculateTotal();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -980,7 +1416,7 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: cardBorder,
                     borderRadius: BorderRadius.circular(2)),
               ),
             ),
@@ -988,10 +1424,16 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(isAr ? 'خيارات وتفاصيل الحجز' : 'Booking Options',
-                    style: AppTypography.titleMedium),
+                Text(
+                  isAr ? 'خيارات وتفاصيل الحجز' : 'Booking Options',
+                  style: GoogleFonts.cairo(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  icon: Icon(Icons.close, color: textMuted),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -1014,24 +1456,41 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.tour.title,
-                          style: AppTypography.titleMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        widget.tour.title,
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 4),
                       Text(
-                          '${widget.tour.formattedPrice} / ${isAr ? 'للشخص' : 'per person'}',
-                          style: AppTypography.price.copyWith(fontSize: 14)),
+                        '${widget.tour.formattedPrice} / ${isAr ? 'للشخص' : 'per person'}',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-            const Divider(color: AppColors.border, height: 28),
+            Divider(color: cardBorder, height: 28),
 
             // 1. Date Selector
-            Text(isAr ? 'تاريخ الحجز' : 'Booking Date',
-                style: AppTypography.titleSmall),
+            Text(
+              isAr ? 'تاريخ الحجز' : 'Booking Date',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: () async {
@@ -1043,10 +1502,17 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
-                        colorScheme: const ColorScheme.dark(
-                          primary: AppColors.primaryGold,
-                          surface: AppColors.card,
-                          onSurface: AppColors.textPrimary,
+                        colorScheme: ColorScheme(
+                          brightness:
+                              isDark ? Brightness.dark : Brightness.light,
+                          primary: AppColors.primaryMauve,
+                          onPrimary: Colors.white,
+                          secondary: AppColors.accentGold,
+                          onSecondary: Colors.black,
+                          surface: isDark ? AppColors.darkCard : Colors.white,
+                          onSurface: textPrimary,
+                          error: AppColors.error,
+                          onError: Colors.white,
                         ),
                       ),
                       child: child!,
@@ -1061,9 +1527,9 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: cardBorder),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1071,19 +1537,26 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                     Row(
                       children: [
                         const Icon(Icons.calendar_month,
-                            color: AppColors.primaryGold, size: 20),
+                            color: AppColors.accentGold, size: 20),
                         const SizedBox(width: 10),
                         Text(
                           '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-                          style: AppTypography.titleSmall,
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
                         ),
                       ],
                     ),
-                    Text(isAr ? 'تغيير التاريخ' : 'Change Date',
-                        style: const TextStyle(
-                            color: AppColors.primaryGold,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      isAr ? 'تغيير التاريخ' : 'Change Date',
+                      style: GoogleFonts.cairo(
+                        color: AppColors.accentGold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1091,8 +1564,14 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
             const SizedBox(height: 20),
 
             // 2. Person Types / Ticket Quantities
-            Text(isAr ? 'خيارات التذاكر والزوار' : 'Ticket Options & Guests',
-                style: AppTypography.titleSmall),
+            Text(
+              isAr ? 'خيارات التذاكر والزوار' : 'Ticket Options & Guests',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 10),
 
             if (widget.tour.personTypes.isNotEmpty)
@@ -1106,12 +1585,12 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.card,
+                    color: cardBg,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: q > 0
-                            ? AppColors.primaryGold.withOpacity(0.5)
-                            : AppColors.border),
+                      color: q > 0 ? AppColors.accentGold : cardBorder,
+                      width: q > 0 ? 1.5 : 1,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1120,18 +1599,30 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name,
-                                style: AppTypography.titleSmall
-                                    .copyWith(fontSize: 14)),
-                            if (desc != null && desc.isNotEmpty)
-                              Text(desc,
-                                  style: AppTypography.bodySmall.copyWith(
-                                      fontSize: 11,
-                                      color: AppColors.textMuted)),
                             Text(
-                                '${p.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
-                                style:
-                                    AppTypography.price.copyWith(fontSize: 13)),
+                              name,
+                              style: GoogleFonts.cairo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
+                            if (desc != null && desc.isNotEmpty)
+                              Text(
+                                desc,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 11,
+                                  color: textMuted,
+                                ),
+                              ),
+                            Text(
+                              '${p.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
+                              style: GoogleFonts.cairo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.accentGold,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1139,16 +1630,23 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline,
-                                color: AppColors.primaryGold, size: 22),
+                                color: AppColors.accentGold, size: 22),
                             onPressed: q > 0
                                 ? () => setState(
                                     () => _personQuantities[p.name] = q - 1)
                                 : null,
                           ),
-                          Text('$q', style: AppTypography.titleMedium),
+                          Text(
+                            '$q',
+                            style: GoogleFonts.cairo(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline,
-                                color: AppColors.primaryGold, size: 22),
+                                color: AppColors.accentGold, size: 22),
                             onPressed: q < p.max
                                 ? () => setState(
                                     () => _personQuantities[p.name] = q + 1)
@@ -1165,31 +1663,43 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: cardBorder),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(isAr ? 'عدد الزوار' : 'Guests',
-                        style: AppTypography.titleSmall),
+                    Text(
+                      isAr ? 'عدد الزوار' : 'Guests',
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
+                    ),
                     Row(
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline,
-                              color: AppColors.primaryGold),
+                              color: AppColors.accentGold),
                           onPressed: (_personQuantities['default'] ?? 1) > 1
                               ? () => setState(() =>
                                   _personQuantities['default'] =
                                       (_personQuantities['default'] ?? 1) - 1)
                               : null,
                         ),
-                        Text('${_personQuantities['default'] ?? 1}',
-                            style: AppTypography.titleMedium),
+                        Text(
+                          '${_personQuantities['default'] ?? 1}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.add_circle_outline,
-                              color: AppColors.primaryGold),
+                              color: AppColors.accentGold),
                           onPressed: () => setState(() =>
                               _personQuantities['default'] =
                                   (_personQuantities['default'] ?? 1) + 1),
@@ -1203,42 +1713,59 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
             // 3. Extra Services
             if (widget.tour.extraPrices.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(isAr ? 'خدمات إضافية اختيارية' : 'Optional Extra Services',
-                  style: AppTypography.titleSmall),
+              Text(
+                isAr ? 'خدمات إضافية اختيارية' : 'Optional Extra Services',
+                style: GoogleFonts.cairo(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+              ),
               const SizedBox(height: 10),
               ...widget.tour.extraPrices.map((extra) {
                 final isSelected = _selectedExtras.contains(extra.name);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Material(
-                    color: AppColors.card,
+                    color: cardBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                       side: BorderSide(
-                          color: isSelected
-                              ? AppColors.primaryGold
-                              : AppColors.border),
+                        color: isSelected ? AppColors.accentGold : cardBorder,
+                        width: isSelected ? 1.5 : 1,
+                      ),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: CheckboxListTile(
-                    activeColor: AppColors.primaryGold,
-                    checkColor: AppColors.textDark,
-                    title: Text(extra.getDisplayName(isAr),
-                        style: AppTypography.titleSmall.copyWith(fontSize: 14)),
-                    subtitle: Text(
+                      activeColor: AppColors.accentGold,
+                      checkColor: Colors.black,
+                      title: Text(
+                        extra.getDisplayName(isAr),
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
                         '+ ${extra.price.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
-                        style: AppTypography.price.copyWith(fontSize: 12)),
-                    value: isSelected,
-                    onChanged: (val) {
-                      setState(() {
-                        if (val == true) {
-                          _selectedExtras.add(extra.name);
-                        } else {
-                          _selectedExtras.remove(extra.name);
-                        }
-                      });
-                    },
-                  ),
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                      value: isSelected,
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedExtras.add(extra.name);
+                          } else {
+                            _selectedExtras.remove(extra.name);
+                          }
+                        });
+                      },
+                    ),
                   ),
                 );
               }),
@@ -1253,15 +1780,21 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(isAr ? 'المجموع الإجمالي' : 'Total Amount',
-                        style: AppTypography.bodySmall),
-                    Text('${total.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
-                        style: AppTypography.price.copyWith(fontSize: 22)),
+                    Text(
+                      isAr ? 'المجموع الإجمالي' : 'Total Amount',
+                      style: GoogleFonts.cairo(fontSize: 12, color: textMuted),
+                    ),
+                    Text(
+                      '${total.toStringAsFixed(0)} ${isAr ? '﷼' : 'SAR'}',
+                      style: GoogleFonts.cairo(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accentGold,
+                      ),
+                    ),
                   ],
                 ),
-                CustomButton(
-                  text: isAr ? 'متابعة للدفع والتأكيد' : 'Proceed to Checkout',
-                  width: 190,
+                ElevatedButton(
                   onPressed: () {
                     final personItems = <BookingPersonItem>[];
                     if (widget.tour.personTypes.isNotEmpty) {
@@ -1304,6 +1837,23 @@ class _BookingBottomSheetState extends State<_BookingBottomSheet> {
                     Navigator.pop(context);
                     context.push('/checkout/${widget.tour.id}', extra: draft);
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMauve,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(
+                    isAr ? 'متابعة للدفع والتأكيد' : 'Proceed to Checkout',
+                    style: GoogleFonts.cairo(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -431,6 +431,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
     final currentIndex = _calculateSelectedIndex(context);
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final navItems = [
       _NavItemData(
@@ -439,108 +440,111 @@ class ScaffoldWithNavBar extends ConsumerWidget {
         activeIcon: Icons.home_rounded,
       ),
       _NavItemData(
-        label: isAr ? 'اكتشف' : 'Discover',
+        label: isAr ? 'استكشف' : 'Discover',
         icon: Icons.explore_outlined,
-        activeIcon: Icons.explore,
+        activeIcon: Icons.explore_rounded,
       ),
       _NavItemData(
-        label: isAr ? 'الحجوزات' : 'Bookings',
-        icon: Icons.event_available_outlined,
-        activeIcon: Icons.event_available,
+        label: isAr ? 'رحلاتي' : 'Trips',
+        icon: Icons.map_outlined,
+        activeIcon: Icons.map_rounded,
       ),
       _NavItemData(
-        label: isAr ? 'المفضلات' : 'Favorites',
-        icon: Icons.favorite_border,
-        activeIcon: Icons.favorite,
+        label: isAr ? 'المفضلة' : 'Favorites',
+        icon: Icons.favorite_outline_rounded,
+        activeIcon: Icons.favorite_rounded,
       ),
       _NavItemData(
         label: isAr ? 'حسابي' : 'Account',
-        icon: Icons.person_outline,
-        activeIcon: Icons.person,
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
       ),
     ];
+
+    final navBg = isDark ? const Color(0xFF0E0B12) : Colors.white;
+    final navBorder = isDark ? const Color(0xFF231A2E) : const Color(0xFFEBE3F0);
+    final inactiveColor =
+        isDark ? const Color(0xFF786D85) : const Color(0xFF8E839B);
 
     return Scaffold(
       extendBody: true,
       body: child,
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: 70,
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0C1926).withOpacity(0.96),
-            borderRadius: BorderRadius.circular(38),
-            border: Border.all(color: const Color(0xFF1E3246), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.45),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(navItems.length, (index) {
-              final item = navItems[index];
-              final isSelected = currentIndex == index;
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: navBg,
+          border: Border(top: BorderSide(color: navBorder, width: 1.0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.45 : 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: 62,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(navItems.length, (index) {
+                final item = navItems[index];
+                final isSelected = currentIndex == index;
 
-              return GestureDetector(
-                onTap: () => _onItemTapped(index, context),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (isSelected)
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => _onItemTapped(index, context),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Top Active Gold Line Indicator (matching Figma)
                         Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF5A623),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0x66F5A623),
-                                blurRadius: 10,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            item.activeIcon,
-                            color: const Color(0xFF0C1926),
-                            size: 20,
-                          ),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, bottom: 2),
-                          child: Icon(
-                            item.icon,
-                            color: const Color(0xFF8A9BB0),
-                            size: 21,
+                          width: 24,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFFF5A623)
+                                : Colors.transparent,
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(3),
+                            ),
                           ),
                         ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          color: isSelected ? const Color(0xFFF5A623) : const Color(0xFF8A9BB0),
-                          fontSize: 10,
-                          height: 1.1,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        const Spacer(),
+
+                        // Icon
+                        Icon(
+                          isSelected ? item.activeIcon : item.icon,
+                          color: isSelected
+                              ? const Color(0xFFF5A623)
+                              : inactiveColor,
+                          size: 22,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 3),
+
+                        // Label in Cairo font
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            color: isSelected
+                                ? const Color(0xFFF5A623)
+                                : inactiveColor,
+                            fontSize: 11,
+                            height: 1.1,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),

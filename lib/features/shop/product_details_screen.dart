@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
 import '../../core/localization/locale_provider.dart';
 import '../../core/utils/share_helper.dart';
-import '../../core/widgets/custom_button.dart';
 import '../cart/data/cart_repository.dart';
 import 'data/shop_repository.dart';
 import '../wishlist/data/wishlist_repository.dart';
@@ -33,8 +32,17 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     final cartState = ref.watch(cartNotifierProvider);
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Scaffold(
+      backgroundColor: bg,
       body: prodAsync.when(
         data: (prod) {
           final images =
@@ -48,11 +56,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   SliverAppBar(
                     expandedHeight: 360,
                     pinned: true,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: bg,
                     leading: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
-                        backgroundColor: Colors.black.withOpacity(0.55),
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
                         child: IconButton(
                           icon:
                               const Icon(Icons.arrow_back, color: Colors.white),
@@ -65,7 +73,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: Icon(
                               ref
@@ -77,7 +85,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                       .watch(wishlistProvider)
                                       .isFavorite(widget.productId, 'product')
                                   ? AppColors.error
-                                  : AppColors.primaryGold,
+                                  : AppColors.accentGold,
                             ),
                             onPressed: () async {
                               final added = await ref
@@ -102,16 +110,24 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(added
-                                        ? (isAr
-                                            ? 'تمت إضافة المنتج إلى المفضلة ❤️'
-                                            : 'Added product to favorites ❤️')
-                                        : (isAr
-                                            ? 'تمت إزالة المنتج من المفضلة'
-                                            : 'Removed from favorites')),
+                                    content: Text(
+                                      added
+                                          ? (isAr
+                                              ? 'تمت إضافة المنتج إلى المفضلة ❤️'
+                                              : 'Added product to favorites ❤️')
+                                          : (isAr
+                                              ? 'تمت إزالة المنتج من المفضلة'
+                                              : 'Removed from favorites'),
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                     backgroundColor: added
-                                        ? AppColors.primaryGold
-                                        : AppColors.card,
+                                        ? AppColors.accentGold
+                                        : (isDark
+                                            ? AppColors.darkCard
+                                            : const Color(0xFF333333)),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -124,10 +140,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: const Icon(Icons.share_outlined,
-                                color: Colors.white),
+                                color: Colors.white, size: 20),
                             onPressed: () => ShareHelper.shareItem(
                               context: context,
                               title: prod.title,
@@ -145,10 +161,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           clipBehavior: Clip.none,
                           children: [
                             CircleAvatar(
-                              backgroundColor: Colors.black.withOpacity(0.55),
+                              backgroundColor:
+                                  Colors.black.withValues(alpha: 0.55),
                               child: IconButton(
                                 icon: const Icon(Icons.shopping_bag_outlined,
-                                    color: Colors.white),
+                                    color: Colors.white, size: 20),
                                 onPressed: () => context.push('/cart'),
                               ),
                             ),
@@ -159,13 +176,13 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(5),
                                   decoration: const BoxDecoration(
-                                    color: AppColors.primaryGold,
+                                    color: AppColors.accentGold,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Text(
                                     '${cartState.itemCount}',
-                                    style: const TextStyle(
-                                      color: AppColors.textDark,
+                                    style: GoogleFonts.cairo(
+                                      color: Colors.black,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -189,24 +206,24 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 imageUrl: images[index],
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => Container(
-                                  color: AppColors.surface,
-                                  child: const Icon(Icons.image_not_supported,
-                                      color: AppColors.textMuted),
+                                  color: cardBg,
+                                  child: Icon(Icons.image_not_supported,
+                                      color: textMuted),
                                 ),
                               );
                             },
                           ),
-                          // Dark gradient overlay
+                          // Dark gradient overlay transitioning to bg
                           DecoratedBox(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  Colors.black.withOpacity(0.5),
+                                  Colors.black.withValues(alpha: 0.5),
                                   Colors.transparent,
-                                  AppColors.background.withOpacity(0.9),
-                                  AppColors.background,
+                                  bg.withValues(alpha: 0.9),
+                                  bg,
                                 ],
                                 stops: const [0.0, 0.4, 0.85, 1.0],
                               ),
@@ -222,16 +239,17 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.65),
+                                  color: Colors.black.withValues(alpha: 0.65),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.white24),
                                 ),
                                 child: Text(
                                   '📸 ${_currentGalleryIndex + 1} / ${images.length}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.cairo(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -252,26 +270,29 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                    horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.goldGlow,
+                                  color:
+                                      AppColors.accentGold.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: AppColors.primaryGold
-                                          .withOpacity(0.4)),
+                                    color: AppColors.accentGold
+                                        .withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.storefront,
-                                        color: AppColors.primaryGold, size: 14),
+                                        color: AppColors.accentGold, size: 14),
                                     const SizedBox(width: 6),
                                     Text(
                                       prod.storeName,
-                                      style: const TextStyle(
-                                          color: AppColors.primaryGold,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold),
+                                      style: GoogleFonts.cairo(
+                                        color: AppColors.accentGold,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -279,16 +300,19 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 6),
+                                    horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.card,
+                                  color: cardBg,
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.border),
+                                  border: Border.all(color: cardBorder),
                                 ),
                                 child: Text(
                                   prod.category,
-                                  style: AppTypography.bodySmall
-                                      .copyWith(color: AppColors.textPrimary),
+                                  style: GoogleFonts.cairo(
+                                    color: textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -297,7 +321,14 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           const SizedBox(height: 12),
 
                           // Product Title
-                          Text(prod.title, style: AppTypography.headingMedium),
+                          Text(
+                            prod.title,
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
 
                           const SizedBox(height: 8),
 
@@ -305,13 +336,15 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           Row(
                             children: [
                               const Icon(Icons.star,
-                                  color: AppColors.primaryGold, size: 18),
+                                  color: AppColors.accentGold, size: 18),
                               const SizedBox(width: 4),
                               Text(
                                 '${prod.rating} (${prod.reviewsCount} ${isAr ? 'تقييم' : 'reviews'})',
-                                style: AppTypography.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 13,
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               if (prod.sku != null && prod.sku!.isNotEmpty) ...[
                                 const SizedBox(width: 16),
@@ -319,14 +352,16 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.card,
+                                    color: cardBg,
                                     borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: cardBorder),
                                   ),
                                   child: Text(
                                     'SKU: ${prod.sku}',
-                                    style: AppTypography.bodySmall.copyWith(
-                                        color: AppColors.textMuted,
-                                        fontSize: 11),
+                                    style: GoogleFonts.cairo(
+                                      color: textMuted,
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -339,12 +374,13 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.card,
+                              color: cardBg,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: cardBorder),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black
+                                      .withValues(alpha: isDark ? 0.3 : 0.05),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -360,24 +396,33 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(isAr ? 'السعر' : 'Price',
-                                            style: AppTypography.bodySmall),
+                                        Text(
+                                          isAr ? 'السعر' : 'Price',
+                                          style: GoogleFonts.cairo(
+                                            fontSize: 12,
+                                            color: textMuted,
+                                          ),
+                                        ),
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            Text(prod.price,
-                                                style: AppTypography.price
-                                                    .copyWith(fontSize: 24)),
+                                            Text(
+                                              prod.price,
+                                              style: GoogleFonts.cairo(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.accentGold,
+                                              ),
+                                            ),
                                             if (prod.originalPrice !=
                                                 prod.price) ...[
                                               const SizedBox(width: 10),
                                               Text(
                                                 prod.originalPrice,
-                                                style: AppTypography.bodyMedium
-                                                    .copyWith(
+                                                style: GoogleFonts.cairo(
                                                   decoration: TextDecoration
                                                       .lineThrough,
-                                                  color: AppColors.textMuted,
+                                                  color: textMuted,
                                                   fontSize: 14,
                                                 ),
                                               ),
@@ -390,18 +435,18 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                     // Quantity Stepper
                                     Container(
                                       decoration: BoxDecoration(
-                                        color: AppColors.surface,
+                                        color: isDark
+                                            ? const Color(0xFF1E1727)
+                                            : const Color(0xFFF3EEF7),
                                         borderRadius: BorderRadius.circular(14),
-                                        border:
-                                            Border.all(color: AppColors.border),
+                                        border: Border.all(color: cardBorder),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           IconButton(
-                                            icon: const Icon(Icons.remove,
-                                                size: 18,
-                                                color: AppColors.textPrimary),
+                                            icon: Icon(Icons.remove,
+                                                size: 18, color: textPrimary),
                                             onPressed: _quantity > 1
                                                 ? () =>
                                                     setState(() => _quantity--)
@@ -410,14 +455,19 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: 8),
-                                            child: Text('$_quantity',
-                                                style:
-                                                    AppTypography.titleMedium),
+                                            child: Text(
+                                              '$_quantity',
+                                              style: GoogleFonts.cairo(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: textPrimary,
+                                              ),
+                                            ),
                                           ),
                                           IconButton(
                                             icon: const Icon(Icons.add,
                                                 size: 18,
-                                                color: AppColors.primaryGold),
+                                                color: AppColors.accentGold),
                                             onPressed: () =>
                                                 setState(() => _quantity++),
                                           ),
@@ -428,7 +478,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 ),
 
                                 const SizedBox(height: 12),
-                                const Divider(color: AppColors.border),
+                                Divider(color: cardBorder),
                                 const SizedBox(height: 8),
 
                                 // Stock Status Row
@@ -452,10 +502,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                           : (isAr
                                               ? 'نفذت الكمية'
                                               : 'Out of stock'),
-                                      style: TextStyle(
+                                      style: GoogleFonts.cairo(
                                         color: prod.inStock
-                                            ? AppColors.success
-                                            : AppColors.error,
+                                          ? AppColors.success
+                                          : AppColors.error,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -467,20 +517,22 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color:
-                                              AppColors.error.withOpacity(0.15),
+                                          color: AppColors.error
+                                              .withValues(alpha: 0.15),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                           border: Border.all(
-                                              color: AppColors.error
-                                                  .withOpacity(0.4)),
+                                            color: AppColors.error
+                                                .withValues(alpha: 0.4),
+                                          ),
                                         ),
                                         child: Text(
                                           'خصم ${prod.discountPercent}',
-                                          style: const TextStyle(
-                                              color: AppColors.error,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold),
+                                          style: GoogleFonts.cairo(
+                                            color: AppColors.error,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -496,18 +548,24 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: AppColors.card,
+                              color: cardBg,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: cardBorder),
                             ),
                             child: Row(
                               children: [
+                                _buildTabButton(0, isAr ? 'الوصف' : 'Description',
+                                    textPrimary, textMuted),
                                 _buildTabButton(
-                                    0, isAr ? 'الوصف' : 'Description'),
+                                    1,
+                                    isAr ? 'المواصفات' : 'Specifications',
+                                    textPrimary,
+                                    textMuted),
                                 _buildTabButton(
-                                    1, isAr ? 'المواصفات' : 'Specifications'),
-                                _buildTabButton(
-                                    2, isAr ? 'الشحن والضمان' : 'Shipping'),
+                                    2,
+                                    isAr ? 'الشحن والضمان' : 'Shipping',
+                                    textPrimary,
+                                    textMuted),
                               ],
                             ),
                           ),
@@ -515,14 +573,21 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           const SizedBox(height: 16),
 
                           // Tab Content
-                          _buildTabContent(prod, isAr),
+                          _buildTabContent(prod, isAr, cardBg, cardBorder,
+                              textPrimary, textMuted),
 
                           const SizedBox(height: 28),
 
                           // Related Products Section matching Figma ("منتجات مشابهة")
                           if (prod.related.isNotEmpty) ...[
-                            Text(isAr ? 'منتجات مشابهة' : 'Related Products',
-                                style: AppTypography.titleLarge),
+                            Text(
+                              isAr ? 'منتجات مشابهة' : 'Related Products',
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             SizedBox(
                               height: 190,
@@ -539,10 +604,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                     child: Container(
                                       width: 140,
                                       decoration: BoxDecoration(
-                                        color: AppColors.card,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border:
-                                            Border.all(color: AppColors.border),
+                                        color: cardBg,
+                                        borderRadius:
+                                            BorderRadius.circular(16),
+                                        border: Border.all(color: cardBorder),
                                       ),
                                       child: Column(
                                         crossAxisAlignment:
@@ -570,15 +635,21 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: AppTypography
-                                                      .titleSmall
-                                                      .copyWith(fontSize: 12),
+                                                  style: GoogleFonts.cairo(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: textPrimary,
+                                                  ),
                                                 ),
                                                 const SizedBox(height: 4),
-                                                Text(rel.price,
-                                                    style: AppTypography.price
-                                                        .copyWith(
-                                                            fontSize: 12)),
+                                                Text(
+                                                  rel.price,
+                                                  style: GoogleFonts.cairo(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: AppColors.accentGold,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -607,14 +678,15 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    border:
-                        const Border(top: BorderSide(color: AppColors.border)),
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    border: Border(top: BorderSide(color: cardBorder)),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, -4)),
+                        color: Colors.black
+                            .withValues(alpha: isDark ? 0.3 : 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
                     ],
                   ),
                   child: SafeArea(
@@ -624,10 +696,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(
-                                  color: AppColors.primaryGold, width: 1.5),
+                                  color: AppColors.accentGold, width: 1.5),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
                             ),
                             onPressed: () {
                               for (int i = 0; i < _quantity; i++) {
@@ -637,10 +710,16 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(isAr
-                                      ? 'تمت إضافة $_quantity إلى السلة بنجاح!'
-                                      : 'Added $_quantity item(s) to cart!'),
-                                  backgroundColor: AppColors.success,
+                                  content: Text(
+                                    isAr
+                                        ? 'تمت إضافة $_quantity إلى السلة بنجاح!'
+                                        : 'Added $_quantity item(s) to cart!',
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  backgroundColor: AppColors.primaryMauve,
                                 ),
                               );
                             },
@@ -648,13 +727,15 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const Icon(Icons.shopping_bag_outlined,
-                                    color: AppColors.primaryGold, size: 18),
+                                    color: AppColors.accentGold, size: 18),
                                 const SizedBox(width: 8),
                                 Text(
                                   isAr ? 'أضف للسلة' : 'Add to Cart',
-                                  style: const TextStyle(
-                                      color: AppColors.primaryGold,
-                                      fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.cairo(
+                                    color: AppColors.accentGold,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ],
                             ),
@@ -662,9 +743,26 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: CustomButton(
-                            text: isAr ? 'اشتر الآن' : 'Buy Now',
-                            icon: Icons.flash_on,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryMauve,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            icon: const Icon(Icons.flash_on,
+                                size: 18, color: Colors.white),
+                            label: Text(
+                              isAr ? 'اشتر الآن' : 'Buy Now',
+                              style: GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                             onPressed: () {
                               for (int i = 0; i < _quantity; i++) {
                                 ref
@@ -683,12 +781,14 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
             ],
           );
         },
-        loading: () => const Scaffold(
-          body: Center(
-              child: CircularProgressIndicator(color: AppColors.primaryGold)),
+        loading: () => Scaffold(
+          backgroundColor: bg,
+          body: const Center(
+              child: CircularProgressIndicator(color: AppColors.accentGold)),
         ),
         error: (err, __) => Scaffold(
-          appBar: AppBar(),
+          backgroundColor: bg,
+          appBar: AppBar(backgroundColor: Colors.transparent),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -697,15 +797,27 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                     color: AppColors.error, size: 48),
                 const SizedBox(height: 12),
                 Text(
-                    isAr
-                        ? 'تعذر تحميل تفاصيل المنتج'
-                        : 'Failed to load product details',
-                    style: AppTypography.titleMedium),
+                  isAr
+                      ? 'تعذر تحميل تفاصيل المنتج'
+                      : 'Failed to load product details',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () =>
                       ref.refresh(productDetailProvider(widget.productId)),
-                  child: Text(isAr ? 'إعادة المحاولة' : 'Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMauve,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(
+                    isAr ? 'إعادة المحاولة' : 'Retry',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -715,7 +827,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildTabButton(int index, String title) {
+  Widget _buildTabButton(int index, String title, Color textPrimary,
+      Color textMuted) {
     final isSelected = _selectedTab == index;
     return Expanded(
       child: GestureDetector(
@@ -723,15 +836,15 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryGold : Colors.transparent,
+            color: isSelected ? AppColors.accentGold : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isSelected ? AppColors.textDark : AppColors.textMuted,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            style: GoogleFonts.cairo(
+              color: isSelected ? Colors.black : textMuted,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               fontSize: 13,
             ),
           ),
@@ -740,28 +853,33 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildTabContent(ProductModel prod, bool isAr) {
+  Widget _buildTabContent(ProductModel prod, bool isAr, Color cardBg,
+      Color cardBorder, Color textPrimary, Color textMuted) {
     switch (_selectedTab) {
       case 0:
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: cardBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: cardBorder),
           ),
           child: Text(
             prod.description,
-            style: AppTypography.bodyLarge.copyWith(height: 1.7),
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              height: 1.7,
+              color: textMuted,
+            ),
           ),
         );
       case 1:
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: cardBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: cardBorder),
           ),
           child: Column(
             children: [
@@ -771,21 +889,35 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(spec.title,
-                              style: AppTypography.bodyMedium
-                                  .copyWith(color: AppColors.textMuted)),
-                          Text(spec.content,
-                              style: AppTypography.bodyMedium
-                                  .copyWith(fontWeight: FontWeight.bold)),
+                          Text(
+                            spec.title,
+                            style: GoogleFonts.cairo(
+                                fontSize: 13, color: textMuted),
+                          ),
+                          Text(
+                            spec.content,
+                            style: GoogleFonts.cairo(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                         ],
                       ),
                     ))
               else ...[
-                _buildSpecRow(isAr ? 'النوع' : 'Type', prod.category),
-                _buildSpecRow(isAr ? 'المصدر' : 'Source',
-                    isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia'),
-                _buildSpecRow(isAr ? 'الضمان' : 'Authenticity',
-                    isAr ? 'أصلي ١٠٠٪ معتمد' : '100% Authentic'),
+                _buildSpecRow(isAr ? 'النوع' : 'Type', prod.category,
+                    textPrimary, textMuted),
+                _buildSpecRow(
+                    isAr ? 'المصدر' : 'Source',
+                    isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia',
+                    textPrimary,
+                    textMuted),
+                _buildSpecRow(
+                    isAr ? 'الضمان' : 'Authenticity',
+                    isAr ? 'أصلي ١٠٠٪ معتمد' : '100% Authentic',
+                    textPrimary,
+                    textMuted),
               ],
             ],
           ),
@@ -795,75 +927,100 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: cardBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: cardBorder),
           ),
           child: Column(
             children: [
               _buildTrustRow(
-                  Icons.local_shipping_outlined,
-                  isAr ? 'شحن سريع ومبرد' : 'Express Delivery',
-                  isAr
-                      ? 'توصيل مبرد لكافة مناطق المملكة خلال ٢-٤ أيام عمل'
-                      : 'Fast temperature-controlled shipping 2-4 days'),
+                Icons.local_shipping_outlined,
+                isAr ? 'شحن سريع ومبرد' : 'Express Delivery',
+                isAr
+                    ? 'توصيل مبرد لكافة مناطق المملكة خلال ٢-٤ أيام عمل'
+                    : 'Fast temperature-controlled shipping 2-4 days',
+                textPrimary,
+                textMuted,
+              ),
               const SizedBox(height: 12),
               _buildTrustRow(
-                  Icons.verified_outlined,
-                  isAr ? 'ضمان الأصالة والجودة' : 'Quality Guaranteed',
-                  isAr
-                      ? 'منتجات حصرية موثوقة من أفضل مزارع وحرفيي المملكة'
-                      : '100% genuine products directly from local artisans'),
+                Icons.verified_outlined,
+                isAr ? 'ضمان الأصالة والجودة' : 'Quality Guaranteed',
+                isAr
+                    ? 'منتجات حصرية موثوقة من أفضل مزارع وحرفيي المملكة'
+                    : '100% genuine products directly from local artisans',
+                textPrimary,
+                textMuted,
+              ),
               const SizedBox(height: 12),
               _buildTrustRow(
-                  Icons.assignment_return_outlined,
-                  isAr ? 'سياسة استرجاع مرنة' : 'Easy Returns',
-                  isAr
-                      ? 'إمكانية الاسترجاع أو الاستبدال خلال ٧ أيام'
-                      : 'Hassle-free return policy within 7 days'),
+                Icons.assignment_return_outlined,
+                isAr ? 'سياسة استرجاع مرنة' : 'Easy Returns',
+                isAr
+                    ? 'إمكانية الاسترجاع أو الاستبدال خلال ٧ أيام'
+                    : 'Hassle-free return policy within 7 days',
+                textPrimary,
+                textMuted,
+              ),
             ],
           ),
         );
     }
   }
 
-  Widget _buildSpecRow(String key, String val) {
+  Widget _buildSpecRow(
+      String key, String val, Color textPrimary, Color textMuted) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(key,
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textMuted)),
-          Text(val,
-              style: AppTypography.bodyMedium
-                  .copyWith(fontWeight: FontWeight.bold)),
+              style: GoogleFonts.cairo(fontSize: 13, color: textMuted)),
+          Text(
+            val,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: textPrimary,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTrustRow(IconData icon, String title, String desc) {
+  Widget _buildTrustRow(IconData icon, String title, String desc,
+      Color textPrimary, Color textMuted) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.goldGlow,
+            color: AppColors.accentGold.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: AppColors.primaryGold, size: 20),
+          child: Icon(icon, color: AppColors.accentGold, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTypography.titleSmall),
+              Text(
+                title,
+                style: GoogleFonts.cairo(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(desc, style: AppTypography.bodySmall),
+              Text(
+                desc,
+                style: GoogleFonts.cairo(fontSize: 12, color: textMuted),
+              ),
             ],
           ),
         ),

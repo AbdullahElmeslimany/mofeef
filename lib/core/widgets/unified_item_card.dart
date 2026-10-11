@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_typography.dart';
 
 class UnifiedItemCard extends StatelessWidget {
   final String title;
@@ -22,77 +22,93 @@ class UnifiedItemCard extends StatelessWidget {
     this.rating,
     this.subtitle,
     required this.price,
-    this.accentColor = AppColors.primaryGold,
+    this.accentColor = AppColors.primaryMauve,
     required this.onTap,
     this.trailingBadge,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF162534),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: accentColor.withOpacity(0.22),
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cardBorder, width: 1.2),
+          boxShadow: isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Row(
           children: [
-            // Thumbnail Image on Leading side (in RTL this is the right side)
+            // Thumbnail Image on Leading side (in RTL this is on the right)
             ClipRRect(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               child: CachedNetworkImage(
-                imageUrl: imageUrl ?? 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
-                width: 105,
-                height: 100,
+                imageUrl: imageUrl ??
+                    'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
+                width: 104,
+                height: 104,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  width: 105,
-                  height: 100,
-                  color: AppColors.surface,
-                  child: Center(
+                  width: 104,
+                  height: 104,
+                  color: isDark ? const Color(0xFF231B2A) : const Color(0xFFF0EBF3),
+                  child: const Center(
                     child: SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 22,
+                      height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: accentColor,
+                        color: AppColors.primaryMauve,
                       ),
                     ),
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  width: 105,
-                  height: 100,
-                  color: AppColors.surface,
-                  child: Icon(Icons.image_not_supported, color: accentColor.withOpacity(0.5), size: 28),
+                  width: 104,
+                  height: 104,
+                  color: isDark ? const Color(0xFF231B2A) : const Color(0xFFF0EBF3),
+                  child: Icon(
+                    Icons.image_not_supported_outlined,
+                    color: textSub,
+                    size: 26,
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
 
-            // Content Area
+            // Content Column
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Row 1: Title and Chevron / Badge
+                  // Title and optional trailing badge
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -101,43 +117,36 @@ class UnifiedItemCard extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.titleMedium.copyWith(
+                          style: GoogleFonts.cairo(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: textPrimary,
+                            height: 1.25,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      if (trailingBadge != null)
-                        trailingBadge!
-                      else
-                        Icon(
-                          isRtl ? Icons.chevron_left : Icons.chevron_right,
-                          color: accentColor,
-                          size: 22,
-                        ),
+                      if (trailingBadge != null) trailingBadge!,
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 3),
 
-                  // Row 2: Location
+                  // Location Row
                   if (locationName != null && locationName!.isNotEmpty)
                     Row(
                       children: [
                         Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: accentColor,
+                          Icons.location_on_outlined,
+                          size: 13,
+                          color: textSub,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
                             locationName!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: const Color(0xFF8B9CB0),
+                            style: GoogleFonts.cairo(
+                              color: textSub,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -148,58 +157,59 @@ class UnifiedItemCard extends StatelessWidget {
                   else
                     const SizedBox(height: 14),
 
+                  // Subtitle / Brief Description
+                  if (subtitle != null && subtitle!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.cairo(
+                          color: textSub,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+
                   const SizedBox(height: 8),
 
-                  // Row 3: Rating & Specs on one side, Price on the other side
+                  // Bottom Row: Price and Rating (Figma layout)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Rating & Subtitle (e.g. ★ 4.8 • 7س)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (rating != null && rating! > 0) ...[
-                            Icon(Icons.star, size: 14, color: accentColor),
-                            const SizedBox(width: 3),
+                      // Price
+                      Text(
+                        price,
+                        style: GoogleFonts.cairo(
+                          color: textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      // Rating with Gold Star
+                      if (rating != null && rating! > 0)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
                               rating!.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: Color(0xFF8B9CB0),
-                                fontSize: 12,
+                              style: GoogleFonts.cairo(
+                                color: textPrimary,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                          if (subtitle != null && subtitle!.isNotEmpty) ...[
-                            if (rating != null && rating! > 0)
-                              const Text(' • ', style: TextStyle(color: Color(0xFF8B9CB0), fontSize: 12)),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 80),
-                              child: Text(
-                                subtitle!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Color(0xFF8B9CB0),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
+                            const SizedBox(width: 3),
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 16,
+                              color: AppColors.accentGold,
                             ),
                           ],
-                        ],
-                      ),
-
-                      // Price in Bold Accent Color
-                      Text(
-                        price,
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'Tajawal',
                         ),
-                      ),
                     ],
                   ),
                 ],

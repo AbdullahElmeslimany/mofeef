@@ -14,6 +14,7 @@ abstract class AuthRepository {
   Future<void> logout();
   Future<void> deleteAccount();
   Future<void> forgotPassword(String email);
+  Future<String> resendVerificationEmail(String email);
   Future<String?> getSavedToken();
   Future<UserModel?> getSavedUser();
   Future<void> saveUser(UserModel user);
@@ -35,6 +36,8 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await storage.write(key: 'user_profile', value: user.toJsonString());
       return user;
+    } on Failure {
+      rethrow;
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }
@@ -50,6 +53,8 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await storage.write(key: 'user_profile', value: user.toJsonString());
       return user;
+    } on Failure {
+      rethrow;
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }
@@ -124,6 +129,17 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> forgotPassword(String email) async {
     try {
       await _remoteDataSource.forgotPassword(email);
+    } on DioException catch (e) {
+      throw ServerFailure.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<String> resendVerificationEmail(String email) async {
+    try {
+      return await _remoteDataSource.resendVerificationEmail(email);
+    } on Failure {
+      rethrow;
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }

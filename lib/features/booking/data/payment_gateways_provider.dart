@@ -25,16 +25,16 @@ class PaymentGatewayItem {
 const _moyasarGateway = PaymentGatewayItem(
   id: 'moyasar',
   name: 'Online Payment via Moyasar',
-  nameAr: 'الدفع الإلكتروني عبر ميسر',
+  nameAr: 'الدفع الإلكتروني',
   desc: 'Secure payment via Mada, Visa, MasterCard, Apple Pay & STC Pay',
   descAr: 'دفع آمن ومشفر عبر مدى وفيزا وماستركارد وApple Pay وSTC Pay',
   iconType: 'card',
 );
 
 const _codGateway = PaymentGatewayItem(
-  id: 'cod',
-  name: 'Cash on Delivery',
-  nameAr: 'الدفع عند الاستلام',
+  id: 'offline',
+  name: 'Offline Payment',
+  nameAr: 'الدفع عند الوصول',
   desc: 'Pay in cash when the service is delivered',
   descAr: 'ادفع نقدًا عند استلام الخدمة',
   isOffline: true,
@@ -52,7 +52,8 @@ enum PaymentGatewaysMode {
 const defaultPaymentGatewaysMode = PaymentGatewaysMode.both;
 
 class PaymentGatewaysManager extends StateNotifier<PaymentGatewaysMode> {
-  PaymentGatewaysManager({PaymentGatewaysMode initialMode = defaultPaymentGatewaysMode})
+  PaymentGatewaysManager(
+      {PaymentGatewaysMode initialMode = defaultPaymentGatewaysMode})
       : super(initialMode);
 
   Set<String>? _allowedIds;
@@ -78,12 +79,11 @@ class PaymentGatewaysManager extends StateNotifier<PaymentGatewaysMode> {
   List<PaymentGatewayItem> get visibleGateways {
     final pool = _allowedIds == null
         ? appPaymentGateways
-        : appPaymentGateways
-            .where((g) => _allowedIds!.contains(g.id))
-            .toList();
+        : appPaymentGateways.where((g) => _allowedIds!.contains(g.id)).toList();
     return switch (state) {
       PaymentGatewaysMode.both => pool,
-      PaymentGatewaysMode.moyasarOnly => pool.where((g) => g.isMoyasar).toList(),
+      PaymentGatewaysMode.moyasarOnly =>
+        pool.where((g) => g.isMoyasar).toList(),
       PaymentGatewaysMode.codOnly => pool.where((g) => g.isOffline).toList(),
     };
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_response_handler.dart';
 import '../models/tour_model.dart';
 
 abstract class TourRepository {
@@ -42,8 +43,7 @@ class TourRepositoryImpl implements TourRepository {
           'limit': 10,
         },
       );
-      final data = response.data;
-      final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
+      final list = ApiResponseHandler.extractList(response.data);
       return list.map((e) => TourModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
@@ -54,7 +54,7 @@ class TourRepositoryImpl implements TourRepository {
   Future<TourModel> getTourDetail(dynamic id) async {
     try {
       final response = await _dio.get(ApiEndpoints.tourDetail(id));
-      final data = response.data is Map && response.data['data'] != null ? response.data['data'] : response.data;
+      final data = ApiResponseHandler.getDataOrThrow(response.data, 'لم يتم العثور على التجربة');
       return TourModel.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);

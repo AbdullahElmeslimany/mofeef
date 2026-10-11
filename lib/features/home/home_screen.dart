@@ -2,1082 +2,1033 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
 import '../../core/localization/locale_provider.dart';
-import '../../core/widgets/experience_card.dart';
-import '../../core/widgets/section_header.dart';
 import '../tours/data/repositories/tour_repository.dart';
-import '../discovery/data/repositories/discovery_repository.dart';
-import '../discovery/data/models/discovery_models.dart';
 import '../events/data/event_repository.dart';
 import '../museums/data/museum_repository.dart';
-import '../cars/data/car_repository.dart';
-import '../guides/data/guide_repository.dart';
-import '../shop/data/shop_repository.dart';
 import '../cart/data/cart_repository.dart';
 import '../auth/auth_provider.dart';
-import '../wishlist/data/wishlist_repository.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final toursAsync = ref.watch(toursListProvider(null));
-    final locationsAsync = ref.watch(locationsProvider);
-    final eventsAsync = ref.watch(eventsListProvider);
-    final museumsAsync = ref.watch(museumsListProvider);
-    final carsAsync = ref.watch(carsListProvider);
-    final guidesAsync = ref.watch(guidesListProvider);
-    final productsAsync = ref.watch(productsListProvider);
-    final cartState = ref.watch(cartNotifierProvider);
-    final wishlist = ref.watch(wishlistProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _bannerIndex = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
 
+    final authState = ref.watch(authProvider);
+    final toursAsync = ref.watch(toursListProvider(null));
+    final museumsAsync = ref.watch(museumsListProvider);
+    final eventsAsync = ref.watch(eventsListProvider);
+    final cartState = ref.watch(cartNotifierProvider);
+
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // 1. Integrated Full-Width Hero Header
-          SliverToBoxAdapter(
-            child: Container(
-              margin: EdgeInsets.zero,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.55),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  // Full Cover Background Image
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/home_hero_bg.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.network(
-                        'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=1200&q=85',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-
-                  // Teal / Amber Gradient Overlay
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            const Color(0xFF1B4E4A).withOpacity(0.60), // Turquoise top tint
-                            const Color(0xFF09141D).withOpacity(0.55),
-                            const Color(0xFF070F17).withOpacity(0.95), // Dark bottom
-                          ],
-                          stops: const [0.0, 0.45, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Hero Content with SafeArea
-                  SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 26),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                        // Top Bar: User Profile & Notification
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // User Info (Right side in RTL)
-                            Row(
-                              children: [
-                                Stack(
-                                  children: [
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Color(0xFFF5A623),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color(0x66F5A623),
-                                            blurRadius: 10,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          authState.userName != null && authState.userName!.isNotEmpty
-                                              ? authState.userName!.characters.first.toUpperCase()
-                                              : 'م',
-                                          style: const TextStyle(
-                                            color: Color(0xFF0C1926),
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 20,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      child: Container(
-                                        width: 12,
-                                        height: 12,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF5A623),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: const Color(0xFF0C1926), width: 2),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      isAr ? 'مرحباً بك' : 'Welcome',
-                                      style: const TextStyle(
-                                        color: Color(0xFF8FD1C8),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      authState.userName ?? (isAr ? 'مسافر مُضيف' : 'Modeefe Traveler'),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-
-                            // Notification & Cart Icons
-                            Row(
-                              children: [
-                                if (cartState.items.isNotEmpty)
-                                  GestureDetector(
-                                    onTap: () => context.push('/cart'),
-                                    child: Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1E353B).withOpacity(0.85),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white.withOpacity(0.15)),
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 20),
-                                          Positioned(
-                                            top: 6,
-                                            right: 6,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(3),
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFFF5A623),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Text(
-                                                '${cartState.items.length}',
-                                                style: const TextStyle(color: Color(0xFF0C1926), fontSize: 9, fontWeight: FontWeight.bold),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                GestureDetector(
-                                  onTap: () => context.push('/notifications'),
-                                  child: Container(
-                                    width: 42,
-                                    height: 42,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF203B3E).withOpacity(0.85),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white.withOpacity(0.15)),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Icon(
-                                      Icons.notifications_none_outlined,
-                                      color: Colors.white,
-                                      size: 22,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 36),
-
-                        // Handpicked Experiences Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF18242D).withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white.withOpacity(0.12)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.auto_awesome, color: Color(0xFFF5A623), size: 14),
-                              const SizedBox(width: 6),
-                              Text(
-                                isAr ? 'تجارب مختارة بعناية' : 'Handpicked Experiences',
-                                style: const TextStyle(
-                                  color: Color(0xFFE2E8F0),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Big Hero Title
-                        Text(
-                          isAr ? 'من التراث إلى التجربة' : 'From Heritage to Experience',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 27,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Tajawal',
-                            letterSpacing: 0.2,
-                            shadows: [
-                              Shadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 3)),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Search Bar inside Hero
-                        GestureDetector(
-                          onTap: () => context.go('/discover'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF16222D).withOpacity(0.92),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(color: const Color(0xFF26384A), width: 1.2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.search, color: Color(0xFFF5A623), size: 22),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    isAr ? 'ابحث عن وجهة، تجربة، أو فعالية' : 'Search for a destination, trail, or event...',
-                                    style: const TextStyle(
-                                      color: Color(0xFF8A9BB0),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // 2. Main Body Content
-        SliverToBoxAdapter(
+      backgroundColor: bg,
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 18),
-              // 3. Complete Categories Grid (5 in a row + centered)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Column(
-                  children: [
-                    Row(
+              // 1. Top Bar: Greeting & Actions (From Figma 02 · الرئيسية)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Greeting & Title
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _buildCategoryCard(
-                            context,
-                            label: isAr ? 'الوجهات' : 'Destinations',
-                            icon: Icons.map_outlined,
-                            accentColor: const Color(0xFF38BDF8),
-                            gradientColors: const [Color(0xFF0C3854), Color(0xFF051D2E)],
-                            onTap: () => context.push('/locations'),
+                        Text(
+                          isAr
+                              ? (authState.userName != null
+                                  ? 'مرحباً، ${authState.userName}'
+                                  : 'مرحباً بك')
+                              : (authState.userName != null
+                                  ? 'Welcome, ${authState.userName}'
+                                  : 'Welcome'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: textSub,
                           ),
                         ),
-                        Expanded(
-                          child: _buildCategoryCard(
-                            context,
-                            label: isAr ? 'المسارات' : 'Trails',
-                            icon: Icons.alt_route,
-                            accentColor: const Color(0xFFFBBF24),
-                            gradientColors: const [Color(0xFF422F09), Color(0xFF221703)],
-                            onTap: () => context.push('/trails'),
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildCategoryCard(
-                            context,
-                            label: isAr ? 'المتاحف' : 'Museums',
-                            icon: Icons.account_balance_outlined,
-                            accentColor: const Color(0xFFC084FC),
-                            gradientColors: const [Color(0xFF3B1552), Color(0xFF1F082C)],
-                            onTap: () => context.push('/museums'),
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildCategoryCard(
-                            context,
-                            label: isAr ? 'الفعاليات' : 'Events',
-                            icon: Icons.festival_outlined,
-                            accentColor: const Color(0xFFF43F5E),
-                            gradientColors: const [Color(0xFF4A0D1E), Color(0xFF25040D)],
-                            onTap: () => context.push('/events'),
-                          ),
-                        ),
-                        Expanded(
-                          child: _buildCategoryCard(
-                            context,
-                            label: isAr ? 'المرشدون' : 'Guides',
-                            icon: Icons.person_pin_outlined,
-                            accentColor: const Color(0xFF34D399),
-                            gradientColors: const [Color(0xFF0D3D2A), Color(0xFF052015)],
-                            onTap: () => context.push('/guides'),
+                        const SizedBox(height: 2),
+                        Text(
+                          isAr ? 'إلى أين وجهتك اليوم؟' : 'Where to today?',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.cairo(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                            height: 1.25,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildCategoryCard(
-                          context,
-                          label: isAr ? 'السيارات' : 'Cars',
-                          icon: Icons.directions_car_outlined,
-                          accentColor: const Color(0xFF60A5FA),
-                          gradientColors: const [Color(0xFF183354), Color(0xFF0C1D32)],
-                          onTap: () => context.push('/cars'),
-                        ),
-                        const SizedBox(width: 24),
-                        _buildCategoryCard(
-                          context,
-                          label: isAr ? 'المتجر' : 'Shop',
-                          icon: Icons.storefront_outlined,
-                          accentColor: const Color(0xFFFB923C),
-                          gradientColors: const [Color(0xFF472109), Color(0xFF230E03)],
-                          onTap: () => context.push('/store'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(width: 10),
 
-                const SizedBox(height: 24),
-
-                // 4. Inspiring Destinations Section matching Figma ("الوجهات الملهمة")
-                SectionHeader(
-                  title: isAr ? 'الوجهات الملهمة' : 'Inspiring Destinations',
-                  subtitle: isAr ? 'أعرق الوجهات في المملكة العربية السعودية' : 'Top heritage destinations across KSA',
-                  actionText: isAr ? 'الكل' : 'See all',
-                  onActionTap: () => context.push('/locations'),
-                ),
-
-                locationsAsync.when(
-                  data: (locations) {
-                    final displayLocations = locations.isNotEmpty
-                        ? locations
-                        : const [
-                            LocationModel(id: 1, name: 'العُلا', imageUrl: 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80', slug: 'تراث'),
-                            LocationModel(id: 2, name: 'الدرعية', imageUrl: 'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?w=800&q=80', slug: 'تراث'),
-                            LocationModel(id: 3, name: 'جدة التاريخية', imageUrl: 'https://images.unsplash.com/photo-1578895101407-28d8442e61df?w=800&q=80', slug: 'ثقافة'),
-                            LocationModel(id: 4, name: 'الرياض', imageUrl: 'https://images.unsplash.com/photo-1548013146-72479768bada?w=800&q=80', slug: 'حضرية'),
-                            LocationModel(id: 5, name: 'البحر الأحمر', imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80', slug: 'طبيعة'),
-                          ];
-
-                    return SizedBox(
-                      height: 160,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: displayLocations.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final loc = displayLocations[index];
-                          final name = loc.name.isNotEmpty ? loc.name : 'وجهة سياحية';
-                          final region = isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia';
-                          final tag = loc.slug ?? (isAr ? 'تراث' : 'Heritage');
-                          final img = loc.imageUrl ?? loc.bannerUrl ?? 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80';
-
-                          return GestureDetector(
-                            onTap: () => context.push('/location/${loc.id}?name=${Uri.encodeComponent(name)}'),
-                            child: Container(
-                              width: 140,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(18),
-                                    child: CachedNetworkImage(
-                                      imageUrl: img,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(18),
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withOpacity(0.85),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: Colors.white24),
-                                      ),
-                                      child: Text(tag, style: const TextStyle(color: AppColors.primaryGold, fontSize: 10, fontWeight: FontWeight.bold)),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 10,
-                                    left: 10,
-                                    right: 10,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(name, style: AppTypography.titleSmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                                        Text(region, style: AppTypography.bodySmall.copyWith(color: Colors.white70, fontSize: 10)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator(color: AppColors.primaryGold))),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 5. Featured Tourist Trails & Experiences ("المسارات السياحية")
-                SectionHeader(
-                  title: isAr ? 'المسارات السياحية والتاريخية' : 'Tourist & Heritage Trails',
-                  subtitle: isAr ? 'مسارات حية ومغامرات استكشافية متكاملة' : 'Curated itineraries and adventures',
-                  actionText: isAr ? 'عرض الكل' : 'View all',
-                  onActionTap: () => context.push('/trails'),
-                ),
-
-                toursAsync.when(
-                  data: (tours) {
-                    if (tours.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Center(child: Text(isAr ? 'لا توجد مسارات متاحة حالياً' : 'No trails available', style: AppTypography.bodyMedium)),
-                      );
-                    }
-                    return SizedBox(
-                      height: 290,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: tours.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
-                        itemBuilder: (context, index) {
-                          final tour = tours[index];
-                          final isFav = wishlist.isFavorite(tour.id, 'tour');
-                          return ExperienceCard(
-                            title: tour.title,
-                            category: tour.categoryName ?? (isAr ? 'مسار سياحي' : 'Tourist Trail'),
-                            location: tour.locationName ?? (isAr ? 'المملكة' : 'KSA'),
-                            price: tour.formattedPrice,
-                            duration: tour.duration ?? (isAr ? 'ساعتان' : '2 hours'),
-                            rating: tour.rating,
-                            imageUrl: tour.imageUrl ?? 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
-                            isFavorite: isFav,
-                            onFavoriteTap: () async {
-                              final added = await ref.read(wishlistProvider.notifier).toggleFavorite(
-                                WishlistItemModel(
-                                  id: tour.id,
-                                  objectId: tour.id,
-                                  objectModel: 'tour',
-                                  title: tour.title,
-                                  imageUrl: tour.imageUrl,
-                                  price: tour.salePrice ?? tour.price,
-                                  location: tour.locationName ?? tour.address,
-                                ),
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(added
-                                        ? (isAr ? 'تمت إضافة المسار إلى المفضلة ❤️' : 'Added to favorites ❤️')
-                                        : (isAr ? 'تمت إزالة المسار من المفضلة' : 'Removed from favorites')),
-                                    backgroundColor: added ? AppColors.primaryGold : AppColors.card,
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                            onTap: () => context.push('/experience/${tour.id}'),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox(height: 220, child: Center(child: CircularProgressIndicator(color: AppColors.primaryGold))),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 6. Live Events Section ("الفعاليات والمواسم")
-                SectionHeader(
-                  title: isAr ? 'الفعاليات والمواسم' : 'Events & Festivals',
-                  subtitle: isAr ? 'عروض حية ومهرجانات ثقافية كبرى' : 'Live cultural shows & festivals',
-                  actionText: isAr ? 'المزيد' : 'More',
-                  onActionTap: () => context.push('/events'),
-                ),
-
-                eventsAsync.when(
-                  data: (events) {
-                    if (events.isEmpty) return const SizedBox.shrink();
-                    return SizedBox(
-                      height: 200,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: events.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final event = events[index];
-                          return GestureDetector(
-                            onTap: () => context.push('/event/${event.id}'),
-                            child: Container(
-                              width: 220,
-                              decoration: BoxDecoration(
-                                color: AppColors.card,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                                    child: CachedNetworkImage(
-                                      imageUrl: event.imageUrl,
-                                      height: 110,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(event.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.titleSmall),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(event.location, style: AppTypography.bodySmall),
-                                            Text(event.price, style: AppTypography.price.copyWith(fontSize: 13)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 7. Museums Section ("المتاحف والمعالم")
-                SectionHeader(
-                  title: isAr ? 'المتاحف والمعالم' : 'Museums & Heritage',
-                  subtitle: isAr ? 'شواهد تاريخية وصروح ثقافية' : 'Historical landmarks and museums',
-                  actionText: isAr ? 'المزيد' : 'More',
-                  onActionTap: () => context.push('/museums'),
-                ),
-
-                museumsAsync.when(
-                  data: (museums) {
-                    if (museums.isEmpty) return const SizedBox.shrink();
-                    return SizedBox(
-                      height: 190,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: museums.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final museum = museums[index];
-                          return GestureDetector(
-                            onTap: () => context.push('/museum/${museum.id}'),
-                            child: Container(
-                              width: 200,
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                    child: CachedNetworkImage(
-                                      imageUrl: museum.imageUrl ?? 'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=800&q=80',
-                                      height: 100,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(museum.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.titleSmall),
-                                        const SizedBox(height: 4),
-                                        Text(museum.formattedPrice, style: AppTypography.price.copyWith(fontSize: 13)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 8. Cars & Transport Section ("السيارات والتنقل السياحي")
-                SectionHeader(
-                  title: isAr ? 'السيارات والتنقل السياحي' : 'Car Rentals & Transport',
-                  subtitle: isAr ? 'أسطول فاخر وخدمات نقل سياحية مريحة' : 'Luxury fleet and tourist transport',
-                  actionText: isAr ? 'المزيد' : 'More',
-                  onActionTap: () => context.push('/cars'),
-                ),
-
-                carsAsync.when(
-                  data: (cars) {
-                    if (cars.isEmpty) return const SizedBox.shrink();
-                    return SizedBox(
-                      height: 200,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: cars.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
-                        itemBuilder: (context, index) {
-                          final car = cars[index];
-                          return GestureDetector(
-                            onTap: () => context.push('/car/${car.id}'),
-                            child: Container(
-                              width: 220,
-                              decoration: BoxDecoration(
-                                color: AppColors.card,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                                    child: CachedNetworkImage(
-                                      imageUrl: car.imageUrl,
-                                      height: 105,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(car.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.titleSmall),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.people_alt_outlined, size: 14, color: AppColors.textSecondary),
-                                                const SizedBox(width: 4),
-                                                Text('${car.passengerCount}', style: AppTypography.bodySmall),
-                                              ],
-                                            ),
-                                            Text(car.pricePerDay, style: AppTypography.price.copyWith(fontSize: 13)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 9. Certified Tour Guides Section ("المرشدون السياحيون المعتمدون")
-                SectionHeader(
-                  title: isAr ? 'المرشدون السياحيون المعتمدون' : 'Certified Tour Guides',
-                  subtitle: isAr ? 'نخبة من المرشدين المرخصين والمحترفين' : 'Licensed & professional tour guides',
-                  actionText: isAr ? 'المزيد' : 'More',
-                  onActionTap: () => context.push('/guides'),
-                ),
-
-                guidesAsync.when(
-                  data: (guides) {
-                    if (guides.isEmpty) return const SizedBox.shrink();
-                    return SizedBox(
-                      height: 125,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: guides.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final guide = guides[index];
-                          return GestureDetector(
-                            onTap: () => context.push('/guide/${guide.id}'),
-                            child: Container(
-                              width: 240,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.card,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 30,
-                                    backgroundImage: CachedNetworkImageProvider(guide.imageUrl),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          guide.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTypography.titleSmall,
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          guide.title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTypography.bodySmall.copyWith(fontSize: 11),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.star, color: AppColors.primaryGold, size: 13),
-                                                const SizedBox(width: 3),
-                                                Text('${guide.rating}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                              ],
-                                            ),
-                                            Text(guide.hourlyRate, style: AppTypography.price.copyWith(fontSize: 11)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // 10. Gift Shop Section ("متجر الهدايا")
-                SectionHeader(
-                  title: isAr ? 'متجر الهدايا والتذكارات' : 'Gift Shop & Souvenirs',
-                  subtitle: isAr ? 'هدايا وتذكارات تراثية سعودية أصيلة' : 'Authentic Saudi gifts and souvenirs',
-                  actionText: isAr ? 'المزيد' : 'More',
-                  onActionTap: () => context.push('/store'),
-                ),
-
-                productsAsync.when(
-                  data: (products) {
-                    if (products.isEmpty) return const SizedBox.shrink();
-                    return SizedBox(
-                      height: 200,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: products.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 14),
-                        itemBuilder: (context, index) {
-                          final product = products[index];
-                          return GestureDetector(
-                            onTap: () => context.push('/product/${product.id}'),
-                            child: Container(
-                              width: 160,
-                              decoration: BoxDecoration(
-                                color: AppColors.card,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CachedNetworkImage(
-                                    imageUrl: product.imageUrl,
-                                    height: 110,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(product.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.titleSmall),
-                                        const SizedBox(height: 4),
-                                        Text(product.price, style: AppTypography.price.copyWith(fontSize: 13)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Gift Shop Promo Card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: GestureDetector(
-                    onTap: () => context.push('/store'),
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(14),
+                  // Actions: Search & Notifications (& Cart if items)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Cart Icon (if has items)
+                      if (cartState.items.isNotEmpty) ...[
+                        GestureDetector(
+                          onTap: () => context.push('/cart'),
+                          child: Container(
+                            width: 40,
+                            height: 40,
                             decoration: BoxDecoration(
-                              color: AppColors.goldGlow,
-                              borderRadius: BorderRadius.circular(16),
+                              shape: BoxShape.circle,
+                              color: cardBg,
+                              border: Border.all(color: cardBorder),
                             ),
-                            child: const Icon(Icons.card_giftcard, color: AppColors.primaryGold, size: 30),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Stack(
+                              alignment: Alignment.center,
                               children: [
-                                Text(isAr ? 'متجر الهدايا والتذكارات' : 'Modeefe Gift Shop', style: AppTypography.titleMedium),
-                                const SizedBox(height: 4),
-                                Text(
-                                  isAr ? 'تصفح جميع الهدايا، التمور، العطور، والتحف التراثية' : 'Explore all souvenirs, dates, oud, and gifts',
-                                  style: AppTypography.bodySmall,
+                                Icon(Icons.shopping_bag_outlined,
+                                    size: 19, color: textPrimary),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.accentGold,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '${cartState.items.length}',
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(Icons.arrow_forward_ios, color: AppColors.primaryGold, size: 16),
-                        ],
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+
+                      // Search Button
+                      GestureDetector(
+                        onTap: () => context.go('/discover'),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: cardBg,
+                            border: Border.all(color: cardBorder),
+                          ),
+                          child: Icon(Icons.search_rounded,
+                              size: 19, color: textPrimary),
+                        ),
                       ),
+                      const SizedBox(width: 8),
+
+                      // Notification Button
+                      GestureDetector(
+                        onTap: () => context.push('/notifications'),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: cardBg,
+                            border: Border.all(color: cardBorder),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(Icons.notifications_none_rounded,
+                                  size: 19, color: textPrimary),
+                              Positioned(
+                                top: 8,
+                                right: 9,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.accentGold,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // 2. Featured Hero Banner (Matching Figma)
+              _buildHeroBanner(context, isAr: isAr),
+              const SizedBox(height: 10),
+
+              // Banner Indicator Dots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (index) {
+                  final isActive = _bannerIndex == index;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: isActive ? 20 : 6,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppColors.accentGold
+                          : (isDark
+                              ? const Color(0xFF2E243B)
+                              : const Color(0xFFDCD2E3)),
+                      borderRadius: BorderRadius.circular(3),
                     ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 24),
+
+              // 3. Categories Grid (الأقسام - 6 Items matching Figma)
+              Text(
+                isAr ? 'الأقسام' : 'Categories',
+                style: GoogleFonts.cairo(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildCategoriesGrid(context, isAr: isAr),
+              const SizedBox(height: 28),
+
+              // 4. Featured Museums Section (متاحف مميزة)
+              _buildSectionHeader(
+                title: isAr ? 'متاحف مميزة' : 'Featured Museums',
+                onSeeAll: () => context.push('/museums'),
+                isAr: isAr,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 12),
+              museumsAsync.when(
+                data: (museums) =>
+                    _buildMuseumsRow(context, museums, isAr: isAr),
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryMauve),
                   ),
                 ),
+                error: (_, __) => _buildMuseumsRow(context, [], isAr: isAr),
+              ),
+              const SizedBox(height: 28),
 
-                const SizedBox(height: 110),
-              ],
-            ),
+              // 5. Handpicked Experiences Section (تجارب مختارة)
+              _buildSectionHeader(
+                title: isAr ? 'تجارب مختارة' : 'Handpicked Experiences',
+                onSeeAll: () => context.push('/trails'),
+                isAr: isAr,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 12),
+              toursAsync.when(
+                data: (tours) =>
+                    _buildExperiencesList(context, tours, isAr: isAr),
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryMauve),
+                  ),
+                ),
+                error: (_, __) =>
+                    _buildExperiencesList(context, [], isAr: isAr),
+              ),
+              const SizedBox(height: 28),
+
+              // 6. Upcoming Events Section (فعاليات قادمة)
+              _buildSectionHeader(
+                title: isAr ? 'فعاليات قادمة' : 'Upcoming Events',
+                onSeeAll: () => context.push('/events'),
+                isAr: isAr,
+                textPrimary: textPrimary,
+              ),
+              const SizedBox(height: 12),
+              eventsAsync.when(
+                data: (events) => _buildEventsCard(context, events, isAr: isAr),
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(
+                        color: AppColors.primaryMauve),
+                  ),
+                ),
+                error: (_, __) => _buildEventsCard(context, [], isAr: isAr),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCategoryCard(
-    BuildContext context, {
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-    required Color accentColor,
-    required List<Color> gradientColors,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 58,
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: gradientColors,
+  // 1. Featured Banner Widget
+  Widget _buildHeroBanner(BuildContext context, {required bool isAr}) {
+    final banners = [
+      {
+        'title':
+            isAr ? 'المتحف الوطني السعودي' : 'National Museum of Saudi Arabia',
+        'subtitle': isAr
+            ? 'الرياض · 8 قاعات عرض تاريخية وإسلامية'
+            : 'Riyadh · 8 Historical & Islamic Halls',
+        'image':
+            'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?w=1200&q=80',
+        'route': '/museum/1',
+      },
+      {
+        'title': isAr ? 'متحف قصر المصمك' : 'Al Masmak Fortress Museum',
+        'subtitle': isAr
+            ? 'الرياض · شاهد انطلاقة توحيد المملكة'
+            : 'Riyadh · Witness the founding of the Kingdom',
+        'image':
+            'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=1200&q=80',
+        'route': '/museum/2',
+      },
+      {
+        'title':
+            isAr ? 'ليلة لرصد النجوم في العلا' : 'Stargazing Night in AlUla',
+        'subtitle': isAr
+            ? 'العلا · تجربة فريدة بين جبال وتراث العلا'
+            : 'AlUla · Unique experience among starry skies',
+        'image':
+            'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&q=80',
+        'route': '/experience/17',
+      },
+    ];
+
+    return SizedBox(
+      height: 200,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: PageView.builder(
+          controller: _pageController,
+          itemCount: banners.length,
+          onPageChanged: (idx) => setState(() => _bannerIndex = idx),
+          itemBuilder: (context, index) {
+            final b = banners[index];
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                // Image
+                CachedNetworkImage(
+                  imageUrl: b['image']!,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) =>
+                      Container(color: const Color(0xFF1B1424)),
                 ),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: accentColor.withOpacity(0.55), width: 1.3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.45),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+
+                // Dark Plum Vignette Gradient
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.15),
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.black.withValues(alpha: 0.92),
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
                   ),
-                  BoxShadow(
-                    color: accentColor.withOpacity(0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                ),
+
+                // Top "مميز" Badge
+                Positioned(
+                  top: 14,
+                  right: isAr ? 14 : null,
+                  left: isAr ? null : 14,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentGold,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isAr ? 'مميز' : 'Featured',
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Content Bottom
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: 14,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              b['title']!,
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                height: 1.25,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              b['subtitle']!,
+                              style: GoogleFonts.cairo(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.85),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () => context.push(b['route']!),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryMauve,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          isAr ? 'احجز تذكرتك' : 'Book Ticket',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // 2. Categories Grid (6 Cards from Figma)
+  Widget _buildCategoriesGrid(BuildContext context, {required bool isAr}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+
+    final categories = [
+      {
+        'label': isAr ? 'المتاحف' : 'Museums',
+        'icon': Icons.account_balance_outlined,
+        'route': '/museums',
+      },
+      {
+        'label': isAr ? 'التجارب' : 'Experiences',
+        'icon': Icons.auto_awesome_outlined,
+        'route': '/trails',
+      },
+      {
+        'label': isAr ? 'الفعاليات' : 'Events',
+        'icon': Icons.calendar_today_outlined,
+        'route': '/events',
+      },
+      {
+        'label': isAr ? 'السيارات' : 'Cars',
+        'icon': Icons.directions_car_outlined,
+        'route': '/cars',
+      },
+      {
+        'label': isAr ? 'المرشدين' : 'Guides',
+        'icon': Icons.person_pin_outlined,
+        'route': '/guides',
+      },
+      {
+        'label': isAr ? 'المتجر' : 'Shop',
+        'icon': Icons.shopping_bag_outlined,
+        'route': '/store',
+      },
+    ];
+
+    return GridView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 1.15,
+      ),
+      itemCount: categories.length,
+      itemBuilder: (context, index) {
+        final cat = categories[index];
+        return GestureDetector(
+          onTap: () => context.push(cat['route'] as String),
+          child: Container(
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  cat['icon'] as IconData,
+                  size: 26,
+                  color:
+                      isDark ? const Color(0xFFC4B3D4) : AppColors.primaryMauve,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  cat['label'] as String,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 3. Featured Museums Row (Side by Side)
+  Widget _buildMuseumsRow(BuildContext context, List<dynamic> museums,
+      {required bool isAr}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    final fallbackItems = [
+      {
+        'id': '1',
+        'title': isAr ? 'المتحف الوطني السعودي' : 'Saudi National Museum',
+        'location': isAr ? 'الرياض' : 'Riyadh',
+        'rating': 4.9,
+        'price': isAr ? 'من 10 ر.س' : 'From 10 SAR',
+        'image':
+            'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?w=800&q=80',
+      },
+      {
+        'id': '2',
+        'title': isAr ? 'متحف قصر المصمك' : 'Al Masmak Fortress',
+        'location': isAr ? 'الرياض' : 'Riyadh',
+        'rating': 4.8,
+        'price': isAr ? 'مجاني' : 'Free',
+        'image':
+            'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
+      },
+    ];
+
+    final displayItems = museums.isNotEmpty
+        ? museums.take(2).map((m) {
+            final double ratingVal = (m is MuseumModel)
+                ? m.rating
+                : (double.tryParse((m as dynamic).rating?.toString() ??
+                        (m as dynamic).ratingAverage?.toString() ??
+                        '') ??
+                    4.8);
+            final bool isFreeVal = (m is MuseumModel)
+                ? (m.price <= 0)
+                : ((m as dynamic).isFree == true || (m as dynamic).price == 0);
+            final dynamic priceVal =
+                (m is MuseumModel) ? m.price : (m as dynamic).price;
+            return {
+              'id': m.id.toString(),
+              'title': m.title.toString(),
+              'location':
+                  m.locationName?.toString() ?? (isAr ? 'المملكة' : 'KSA'),
+              'rating': ratingVal,
+              'price': isFreeVal
+                  ? (isAr ? 'مجاني' : 'Free')
+                  : '${priceVal ?? 10} ${isAr ? 'ر.س' : 'SAR'}',
+              'image': m.imageUrl ?? fallbackItems.first['image']!,
+            };
+          }).toList()
+        : fallbackItems;
+
+    return Row(
+      children: displayItems.map((item) {
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => context.push('/museum/${item['id']}'),
+            child: Container(
+              margin: EdgeInsets.only(
+                  left: displayItems.first == item ? 8 : 0,
+                  right: displayItems.last == item ? 8 : 0),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: cardBorder),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: item['image'] as String,
+                    height: 110,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item['title'] as String,
+                          style: GoogleFonts.cairo(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined,
+                                size: 13, color: textSub),
+                            const SizedBox(width: 4),
+                            Text(
+                              item['location'] as String,
+                              style: GoogleFonts.cairo(
+                                fontSize: 11.5,
+                                color: textSub,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.star_rounded,
+                                    size: 16, color: AppColors.accentGold),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${item['rating']}',
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              item['price'] as String,
+                              style: GoogleFonts.cairo(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.accentGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              child: Center(
-                child: Icon(icon, color: accentColor, size: 24),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // 4. Handpicked Experiences List
+  Widget _buildExperiencesList(BuildContext context, List<dynamic> tours,
+      {required bool isAr}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    final defaultExperiences = [
+      {
+        'id': '17',
+        'title':
+            isAr ? 'جولة تاريخية في الدرعية' : 'Historical Tour in Diriyah',
+        'guide':
+            isAr ? 'مع سعد الدوسري · الرياض' : 'With Saad Al-Dossari · Riyadh',
+        'image':
+            'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80',
+      },
+      {
+        'id': '18',
+        'title':
+            isAr ? 'ليلة لرصد النجوم في العلا' : 'Stargazing Night in AlUla',
+        'guide':
+            isAr ? 'مع نور الغامدي · العلا' : 'With Nour Al-Ghamdi · AlUla',
+        'image':
+            'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&q=80',
+      },
+      {
+        'id': '19',
+        'title': isAr
+            ? 'غوص وتراث بحري في جدة'
+            : 'Diving & Marine Heritage in Jeddah',
+        'guide':
+            isAr ? 'مع خالد الزهراني · البحر الأحمر' : 'With Khaled · Red Sea',
+        'image':
+            'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80',
+      },
+    ];
+
+    final items = tours.isNotEmpty
+        ? tours.take(3).map((t) {
+            return {
+              'id': t.id.toString(),
+              'title': t.title.toString(),
+              'guide': t.locationName != null
+                  ? '${isAr ? 'الوجهة: ' : 'Location: '}${t.locationName}'
+                  : (isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia'),
+              'image': t.imageUrl ?? defaultExperiences.first['image']!,
+            };
+          }).toList()
+        : defaultExperiences;
+
+    return Column(
+      children: items.map((item) {
+        return GestureDetector(
+          onTap: () => context.push('/experience/${item['id']}'),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: cardBorder),
+            ),
+            child: Row(
+              children: [
+                // Chevron icon
+                Icon(
+                  isAr
+                      ? Icons.chevron_left_rounded
+                      : Icons.chevron_right_rounded,
+                  color: textSub,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['title']!,
+                        style: GoogleFonts.cairo(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item['guide']!,
+                        style: GoogleFonts.cairo(
+                          fontSize: 11.5,
+                          color: textSub,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF261D30)
+                              : const Color(0xFFF1E9F5),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          isAr ? 'تجربة' : 'Experience',
+                          style: GoogleFonts.cairo(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? const Color(0xFFC7B5D6)
+                                : AppColors.primaryMauve,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Thumbnail Image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CachedNetworkImage(
+                    imageUrl: item['image']!,
+                    width: 76,
+                    height: 76,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // 5. Upcoming Events Card
+  Widget _buildEventsCard(BuildContext context, List<dynamic> events,
+      {required bool isAr}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    final firstEvent = events.isNotEmpty ? events.first : null;
+    final title = firstEvent?.title ??
+        (isAr ? 'موسم الرياض التراثي' : 'Riyadh Heritage Season');
+    final loc = firstEvent?.locationName ??
+        (isAr ? 'الرياض · قريباً' : 'Riyadh · Soon');
+    final id = firstEvent?.id?.toString() ?? '12';
+
+    return GestureDetector(
+      onTap: () => context.push('/event/$id'),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppColors.accentGold.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accentGold.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.cairo(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    loc,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      color: textSub,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.confirmation_number_outlined,
+                          size: 14, color: AppColors.accentGold),
+                      const SizedBox(width: 5),
+                      Text(
+                        isAr ? 'تذاكر متاحة' : 'Tickets Available',
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 5),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFE2E8F0),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Tajawal',
+            const SizedBox(width: 14),
+
+            // Date Badge Block
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color:
+                    isDark ? const Color(0xFF261D32) : const Color(0xFFEDE4F4),
+                borderRadius: BorderRadius.circular(14),
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '--',
+                    style: GoogleFonts.cairo(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary,
+                      height: 1.0,
+                    ),
+                  ),
+                  Text(
+                    isAr ? 'الشهر' : 'Month',
+                    style: GoogleFonts.cairo(
+                      fontSize: 10,
+                      color: textSub,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // Section Header with "عرض الكل >"
+  Widget _buildSectionHeader({
+    required String title,
+    required VoidCallback onSeeAll,
+    required bool isAr,
+    required Color textPrimary,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.cairo(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+        GestureDetector(
+          onTap: onSeeAll,
+          child: Row(
+            children: [
+              Text(
+                isAr ? 'عرض الكل' : 'View All',
+                style: GoogleFonts.cairo(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.accentGold,
+                ),
+              ),
+              Icon(
+                isAr ? Icons.chevron_left : Icons.chevron_right,
+                size: 16,
+                color: AppColors.accentGold,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_response_handler.dart';
 import '../../../../core/utils/html_utils.dart';
 
 class CarFeatureItem {
@@ -160,8 +161,7 @@ class CarRepositoryImpl implements CarRepository {
           'limit': 10,
         },
       );
-      final data = response.data;
-      final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
+      final list = ApiResponseHandler.extractList(response.data);
       return list.map((e) => CarModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
@@ -172,8 +172,8 @@ class CarRepositoryImpl implements CarRepository {
   Future<CarModel> getCarDetail(dynamic id) async {
     try {
       final response = await _dio.get(ApiEndpoints.carDetail(id));
-      final map = response.data is Map && response.data['data'] != null ? response.data['data'] as Map<String, dynamic> : response.data as Map<String, dynamic>;
-      return CarModel.fromJson(map);
+      final map = ApiResponseHandler.getDataOrThrow(response.data, 'لم يتم العثور على بيانات السيارة');
+      return CarModel.fromJson(map as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }

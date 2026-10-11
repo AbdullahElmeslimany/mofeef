@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
+import '../../../core/localization/locale_provider.dart';
+import '../../../core/widgets/unified_item_card.dart';
 import '../data/museum_repository.dart';
 
 class MuseumListScreen extends ConsumerStatefulWidget {
@@ -20,7 +21,8 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
   RangeValues _priceRange = const RangeValues(0, 500);
   double _minRating = 0.0;
 
-  final List<String> _cities = ['الكل', 'الرياض', 'العُلا', 'جدة التاريخية', 'الدرعية', 'مكة المكرمة', 'المدينة المنورة', 'عسير'];
+  final List<String> _citiesAr = ['الكل', 'الرياض', 'العُلا', 'جدة التاريخية', 'الدرعية', 'مكة المكرمة', 'المدينة المنورة', 'عسير'];
+  final List<String> _citiesEn = ['All', 'Riyadh', 'AlUla', 'Historic Jeddah', 'Diriyah', 'Makkah', 'Madinah', 'Asir'];
 
   @override
   void dispose() {
@@ -28,11 +30,13 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
     super.dispose();
   }
 
-  void _showFilterSheet() {
+  void _showFilterSheet(BuildContext context, bool isAr, bool isDark, Color cardBg, Color cardBorder, Color textPrimary, Color textMuted) {
+    final cities = isAr ? _citiesAr : _citiesEn;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -42,7 +46,7 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
             padding: EdgeInsets.only(
               left: 20,
               right: 20,
-              top: 20,
+              top: 16,
               bottom: MediaQuery.of(context).viewInsets.bottom + 24,
             ),
             child: SingleChildScrollView(
@@ -52,39 +56,55 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                 children: [
                   Center(
                     child: Container(
-                      width: 40,
+                      width: 44,
                       height: 4,
-                      decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                      decoration: BoxDecoration(
+                        color: cardBorder,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('تصفية المتاحف والمعالم', style: AppTypography.headingSmall),
+                      Text(
+                        isAr ? 'تصفية المتاحف والمعالم' : 'Filter Museums & Heritage',
+                        style: GoogleFonts.cairo(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                      ),
                       TextButton(
                         onPressed: () {
                           setModalState(() {
-                            _selectedCity = 'الكل';
+                            _selectedCity = isAr ? 'الكل' : 'All';
                             _priceRange = const RangeValues(0, 500);
                             _minRating = 0.0;
                           });
                           setState(() {});
                         },
-                        child: const Text('إعادة ضبط', style: TextStyle(color: AppColors.error)),
+                        child: Text(
+                          isAr ? 'إعادة ضبط' : 'Reset',
+                          style: GoogleFonts.cairo(color: AppColors.error, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   // City Filter
-                  Text('المدينة / الوجهة', style: AppTypography.titleSmall),
+                  Text(
+                    isAr ? 'المدينة / الوجهة' : 'City / Destination',
+                    style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                  ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _cities.map((city) {
-                      final isSel = _selectedCity == city;
+                    children: cities.map((city) {
+                      final isSel = _selectedCity == city || (_selectedCity == 'الكل' && city == (isAr ? 'الكل' : 'All'));
                       return ChoiceChip(
                         label: Text(city),
                         selected: isSel,
@@ -92,11 +112,12 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                           setModalState(() => _selectedCity = city);
                           setState(() {});
                         },
-                        selectedColor: AppColors.primaryGold,
-                        backgroundColor: AppColors.card,
-                        labelStyle: TextStyle(
-                          color: isSel ? AppColors.textDark : AppColors.textPrimary,
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                        selectedColor: AppColors.primaryMauve,
+                        backgroundColor: isDark ? const Color(0xFF1E1624) : const Color(0xFFECE7EF),
+                        labelStyle: GoogleFonts.cairo(
+                          color: isSel ? Colors.white : textMuted,
+                          fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                          fontSize: 12,
                         ),
                       );
                     }).toList(),
@@ -107,10 +128,17 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('نطاق السعر', style: AppTypography.titleSmall),
                       Text(
-                        '${_priceRange.start.round()} — ${_priceRange.end.round()} ﷼',
-                        style: AppTypography.price.copyWith(fontSize: 14),
+                        isAr ? 'نطاق السعر' : 'Price Range',
+                        style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                      ),
+                      Text(
+                        '${_priceRange.start.round()} — ${_priceRange.end.round()} ${isAr ? 'ر.س' : 'SAR'}',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
                       ),
                     ],
                   ),
@@ -119,8 +147,8 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                     min: 0,
                     max: 500,
                     divisions: 10,
-                    activeColor: AppColors.primaryGold,
-                    inactiveColor: AppColors.border,
+                    activeColor: AppColors.primaryMauve,
+                    inactiveColor: cardBorder,
                     onChanged: (val) {
                       setModalState(() => _priceRange = val);
                       setState(() {});
@@ -129,13 +157,16 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                   const SizedBox(height: 16),
 
                   // Minimum Rating
-                  Text('الحد الأدنى للتقييم', style: AppTypography.titleSmall),
+                  Text(
+                    isAr ? 'الحد الأدنى للتقييم' : 'Minimum Rating',
+                    style: GoogleFonts.cairo(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [0.0, 3.0, 4.0, 4.5].map((r) {
                       final isSel = _minRating == r;
-                      final label = r == 0.0 ? 'الكل' : '$r+ ⭐';
+                      final label = r == 0.0 ? (isAr ? 'الكل' : 'All') : '$r+ ⭐';
                       return GestureDetector(
                         onTap: () {
                           setModalState(() => _minRating = r);
@@ -144,15 +175,15 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSel ? AppColors.goldGlow : AppColors.card,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: isSel ? AppColors.primaryGold : AppColors.border),
+                            color: isSel ? AppColors.primaryMauve : (isDark ? const Color(0xFF1E1624) : const Color(0xFFECE7EF)),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: Text(
                             label,
-                            style: TextStyle(
-                              color: isSel ? AppColors.primaryGold : AppColors.textPrimary,
-                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                            style: GoogleFonts.cairo(
+                              color: isSel ? Colors.white : textMuted,
+                              fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                              fontSize: 12.5,
                             ),
                           ),
                         ),
@@ -161,15 +192,21 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGold,
-                      foregroundColor: AppColors.textDark,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accentGold,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        isAr ? 'تطبيق الفلاتر' : 'Apply Filters',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 14.5),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('تطبيق الفلاتر', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ],
               ),
@@ -183,57 +220,93 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
   @override
   Widget build(BuildContext context) {
     final museumsAsync = ref.watch(museumsListProvider);
+    final currentLocale = ref.watch(localeProvider);
+    final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final inputBg = isDark ? const Color(0xFF191222) : const Color(0xFFF7F4F9);
 
     return Scaffold(
+      backgroundColor: bg,
       appBar: AppBar(
-        title: Text('المتاحف والتراث', style: AppTypography.headingSmall),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new, color: textPrimary, size: 20),
           onPressed: () => context.pop(),
         ),
+        title: Text(
+          isAr ? 'المتاحف والمعالم التراثية' : 'Museums & Heritage Sites',
+          style: GoogleFonts.cairo(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: Column(
         children: [
+          // Search & Filter Row
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                    decoration: InputDecoration(
-                      hintText: 'ابحث عن متحف أو صرح تراثي...',
-                      prefixIcon: const Icon(Icons.search, color: AppColors.primaryGold),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, color: AppColors.textSecondary),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: inputBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: cardBorder, width: 1.2),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => _searchQuery = val.trim()),
+                      cursorColor: AppColors.primaryMauve,
+                      style: GoogleFonts.cairo(color: textPrimary, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: isAr ? 'ابحث عن متحف أو معلم تراثي...' : 'Search museum or heritage site...',
+                        hintStyle: GoogleFonts.cairo(color: textMuted.withValues(alpha: 0.7), fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: AppColors.primaryMauve, size: 22),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear, color: textMuted, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: _showFilterSheet,
+                  onTap: () => _showFilterSheet(context, isAr, isDark, cardBg, cardBorder, textPrimary, textMuted),
                   child: Container(
-                    height: 52,
-                    width: 52,
+                    height: 50,
+                    width: 50,
                     decoration: BoxDecoration(
-                      color: AppColors.goldGlow,
+                      color: isDark ? const Color(0xFF281C30) : const Color(0xFFEDE6F2),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.primaryGold),
+                      border: Border.all(color: AppColors.primaryMauve.withValues(alpha: 0.3)),
                     ),
-                    child: const Icon(Icons.tune, color: AppColors.primaryGold),
+                    child: const Icon(Icons.tune_rounded, color: AppColors.primaryMauve, size: 22),
                   ),
                 ),
               ],
             ),
           ),
+
+          // Museum List
           Expanded(
             child: museumsAsync.when(
               data: (museums) {
@@ -245,7 +318,7 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
                   }
                   if (m.price < _priceRange.start || m.price > _priceRange.end) return false;
                   if (m.rating < _minRating) return false;
-                  if (_selectedCity != 'الكل') {
+                  if (_selectedCity != 'الكل' && _selectedCity != 'All') {
                     if (m.locationName != null && !m.locationName!.contains(_selectedCity)) return false;
                   }
                   return true;
@@ -253,114 +326,56 @@ class _MuseumListScreenState extends ConsumerState<MuseumListScreen> {
 
                 if (filtered.isEmpty) {
                   return Center(
-                    child: Text('لا توجد متاحف مطابقة للبحث', style: AppTypography.bodyMedium),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.museum_outlined, color: textMuted, size: 54),
+                        const SizedBox(height: 14),
+                        Text(
+                          isAr ? 'لا توجد متاحف مطابقة للبحث' : 'No museums matching your search',
+                          style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.bold, color: textPrimary),
+                        ),
+                      ],
+                    ),
                   );
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
                   itemCount: filtered.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final museum = filtered[index];
-                    return GestureDetector(
+                    return UnifiedItemCard(
+                      title: museum.title,
+                      imageUrl: museum.imageUrl,
+                      locationName: museum.locationName ?? (isAr ? 'المملكة العربية السعودية' : 'Saudi Arabia'),
+                      rating: museum.rating,
+                      price: museum.formattedPrice,
+                      accentColor: AppColors.primaryMauve,
                       onTap: () => context.push('/museum/${museum.id}'),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Stack(
-                              children: [
-                                CachedNetworkImage(
-                                  imageUrl: museum.imageUrl ?? 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&q=80',
-                                  height: 180,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => Container(
-                                    height: 180,
-                                    color: AppColors.surface,
-                                    child: const Icon(Icons.museum_outlined, color: AppColors.primaryGold, size: 48),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 12,
-                                  left: 12,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.7),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.star, color: AppColors.primaryGold, size: 16),
-                                        const SizedBox(width: 4),
-                                        Text('${museum.rating}', style: AppTypography.bodySmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 12,
-                                  right: 12,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryGold,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      museum.formattedPrice,
-                                      style: AppTypography.titleSmall.copyWith(color: AppColors.textDark, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(museum.title, style: AppTypography.titleLarge),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on_outlined, color: AppColors.primaryGold, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(museum.locationName ?? 'المملكة العربية السعودية', style: AppTypography.bodyMedium),
-                                      const Spacer(),
-                                      const Icon(Icons.access_time, color: AppColors.textSecondary, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(museum.workingHours ?? '٩ص — ٩م', style: AppTypography.bodySmall),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     );
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryGold)),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryMauve),
+              ),
               error: (err, _) => Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('تعذر تحميل قائمة المتاحف', style: AppTypography.bodyMedium),
-                    const SizedBox(height: 12),
-                    ElevatedButton(
+                    Text(
+                      isAr ? 'تعذر تحميل قائمة المتاحف' : 'Failed to load museums',
+                      style: GoogleFonts.cairo(color: textMuted, fontSize: 14),
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
                       onPressed: () => ref.refresh(museumsListProvider),
-                      child: const Text('إعادة المحاولة'),
+                      child: Text(
+                        isAr ? 'إعادة المحاولة' : 'Retry',
+                        style: GoogleFonts.cairo(color: AppColors.accentGold, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),

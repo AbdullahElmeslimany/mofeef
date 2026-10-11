@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
 import '../../core/localization/locale_provider.dart';
 import '../../core/payment/moyasar_payment_manager.dart';
 import '../../core/widgets/custom_button.dart';
@@ -75,7 +76,7 @@ final walletProvider =
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
 
-  void _showTopUpModal(BuildContext context, WidgetRef ref, bool isAr) {
+  void _showTopUpModal(BuildContext context, WidgetRef ref, bool isAr, bool isDark, Color cardBg, Color cardBorder, Color textPrimary, Color textMuted) {
     double selectedAmount = 100.0;
     String selectedMethod = 'Moyasar';
     bool isProcessing = false;
@@ -84,23 +85,20 @@ class WalletScreen extends ConsumerWidget {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (sheetContext, setModalState) {
           final amounts = [50.0, 100.0, 250.0, 500.0, 1000.0];
-          final methods = [
-            'Moyasar'
-            // , 'Apple Pay'
-          ];
+          final methods = ['Moyasar'];
 
           return Padding(
             padding: EdgeInsets.only(
               left: 20,
               right: 20,
-              top: 20,
+              top: 16,
               bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
             ),
             child: Column(
@@ -109,40 +107,53 @@ class WalletScreen extends ConsumerWidget {
               children: [
                 Center(
                   child: Container(
-                    width: 40,
+                    width: 44,
                     height: 4,
                     decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2)),
+                      color: cardBorder,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   isAr ? 'شحن رصيد المحفظة' : 'Top Up Wallet Balance',
-                  style: AppTypography.headingSmall,
+                  style: GoogleFonts.cairo(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
                 // Amount Selection
-                Text(isAr ? 'اختر المبلغ (﷼)' : 'Select Amount (﷼)',
-                    style: AppTypography.titleSmall),
+                Text(
+                  isAr ? 'اختر المبلغ' : 'Select Amount',
+                  style: GoogleFonts.cairo(fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: amounts.map((amt) {
                     final isSel = selectedAmount == amt;
-                    return ChoiceChip(
-                      label: Text('${amt.toInt()} ﷼'),
-                      selected: isSel,
-                      onSelected: (val) =>
-                          setModalState(() => selectedAmount = amt),
-                      selectedColor: AppColors.primaryGold,
-                      backgroundColor: AppColors.card,
-                      labelStyle: TextStyle(
-                        color:
-                            isSel ? AppColors.textDark : AppColors.textPrimary,
-                        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                    return GestureDetector(
+                      onTap: () => setModalState(() => selectedAmount = amt),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSel ? AppColors.primaryMauve : (isDark ? const Color(0xFF1E1624) : const Color(0xFFECE7EF)),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: isSel ? AppColors.primaryMauve : cardBorder),
+                        ),
+                        child: Text(
+                          '${amt.toInt()} ${isAr ? 'ر.س' : 'SAR'}',
+                          style: GoogleFonts.cairo(
+                            color: isSel ? Colors.white : textMuted,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                     );
                   }).toList(),
@@ -150,37 +161,44 @@ class WalletScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
 
                 // Payment Method
-                Text(isAr ? 'طريقة الدفع' : 'Payment Method',
-                    style: AppTypography.titleSmall),
+                Text(
+                  isAr ? 'بوابة الدفع الآمنة' : 'Payment Gateway',
+                  style: GoogleFonts.cairo(fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
+                ),
                 const SizedBox(height: 10),
                 ...methods.map((method) {
-                  final isSel = selectedMethod == method;
-                  return Material(
-                    color: AppColors.card,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      side: BorderSide(
-                          color:
-                              isSel ? AppColors.primaryGold : AppColors.border),
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1624) : const Color(0xFFF7F4F9),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.primaryMauve, width: 1.5),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: RadioListTile<String>(
-                      title: Text(method,
-                          style:
-                              AppTypography.titleSmall.copyWith(fontSize: 14)),
-                      value: method,
-                      groupValue: selectedMethod,
-                      activeColor: AppColors.primaryGold,
-                      onChanged: (val) =>
-                          setModalState(() => selectedMethod = val!),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.credit_card_rounded, color: AppColors.accentGold, size: 24),
+                        const SizedBox(width: 12),
+                        Text(
+                          isAr ? 'ميسر (مدى / فيزا / ماستركارد)' : 'Moyasar (Mada / Visa / MC)',
+                          style: GoogleFonts.cairo(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.check_circle_rounded, color: AppColors.primaryMauve, size: 20),
+                      ],
                     ),
                   );
                 }),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
                 // Confirm button
                 CustomButton(
-                  text: isAr ? 'تأكيد وشحن الرصيد' : 'Confirm & Top Up',
+                  text: isAr
+                      ? 'تأكيد وشحن (${selectedAmount.toInt()} ر.س)'
+                      : 'Confirm & Top Up (${selectedAmount.toInt()} SAR)',
                   isLoading: isProcessing,
                   onPressed: () async {
                     setModalState(() => isProcessing = true);
@@ -190,7 +208,7 @@ class WalletScreen extends ConsumerWidget {
                               amount: selectedAmount,
                               isAr: isAr,
                               description: isAr
-                                  ? 'شحن رصيد محفظة مديف'
+                                  ? 'شحن رصيد محفظة مضيف'
                                   : 'Modeef wallet top-up',
                             );
                     if (!context.mounted) return;
@@ -207,8 +225,9 @@ class WalletScreen extends ConsumerWidget {
                         SnackBar(
                           content: Text(
                             isAr
-                                ? 'تم شحن المحفظة بنجاح بمبلغ ${selectedAmount.toInt()} ﷼'
-                                : 'Successfully added ${selectedAmount.toInt()} ﷼ to wallet',
+                                ? 'تم شحن المحفظة بنجاح بمبلغ ${selectedAmount.toInt()} ر.س'
+                                : 'Successfully added ${selectedAmount.toInt()} SAR to wallet',
+                            style: GoogleFonts.cairo(),
                           ),
                           backgroundColor: AppColors.success,
                         ),
@@ -220,6 +239,7 @@ class WalletScreen extends ConsumerWidget {
                             isAr
                                 ? 'لم يكتمل الدفع. لم يتم شحن المحفظة.'
                                 : 'Payment was not completed. Wallet was not topped up.',
+                            style: GoogleFonts.cairo(),
                           ),
                           backgroundColor: AppColors.error,
                         ),
@@ -241,39 +261,59 @@ class WalletScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     final userName =
-        authState.user?.displayName ?? (isAr ? 'ضيف مُضيف' : 'Modeefe Guest');
+        authState.user?.displayName ?? (isAr ? 'سعود العتيبي' : 'Saud Alotaibi');
 
     return Scaffold(
+      backgroundColor: bg,
       appBar: AppBar(
-        title: Text(isAr ? 'المحفظة الرقمية' : 'Digital Wallet',
-            style: AppTypography.headingSmall),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: textPrimary, size: 20),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          isAr ? 'المحفظة الرقمية' : 'Digital Wallet',
+          style: GoogleFonts.cairo(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Balance Card
+            // Royal Balance Card
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF273844), Color(0xFF101C25)],
+                  colors: [Color(0xFF654D71), Color(0xFF281C30)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                border:
-                    Border.all(color: AppColors.primaryGold.withOpacity(0.4)),
-                boxShadow: const [
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.35), width: 1.2),
+                boxShadow: [
                   BoxShadow(
-                      color: AppColors.goldGlow,
-                      blurRadius: 20,
-                      offset: Offset(0, 6)),
+                    color: const Color(0xFF654D71).withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
                 ],
               ),
               child: Column(
@@ -282,48 +322,94 @@ class WalletScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(userName,
-                          style: AppTypography.bodySmall
-                              .copyWith(color: AppColors.primaryGold)),
-                      const Icon(Icons.account_balance_wallet,
-                          color: AppColors.primaryGold, size: 24),
+                      Text(
+                        userName,
+                        style: GoogleFonts.cairo(
+                          color: AppColors.accentGold,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const Icon(Icons.account_balance_wallet_rounded, color: AppColors.accentGold, size: 26),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(isAr ? 'الرصيد المتاح' : 'Available Balance',
-                      style: AppTypography.bodySmall),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 14),
                   Text(
-                    '${walletState.balance.toStringAsFixed(2)} ﷼',
-                    style: AppTypography.headingLarge
-                        .copyWith(color: AppColors.primaryGold, fontSize: 32),
+                    isAr ? 'الرصيد المتاح' : 'Available Balance',
+                    style: GoogleFonts.cairo(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 12.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        walletState.balance.toStringAsFixed(2),
+                        style: GoogleFonts.cairo(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isAr ? 'ر.س' : 'SAR',
+                        style: GoogleFonts.cairo(
+                          color: AppColors.accentGold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   Row(
                     children: [
                       Expanded(
-                        child: CustomButton(
-                          text: isAr ? 'إضافة رصيد' : 'Top Up',
-                          icon: Icons.add,
-                          height: 44,
-                          onPressed: () => _showTopUpModal(context, ref, isAr),
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showTopUpModal(context, ref, isAr, isDark, cardBg, cardBorder, textPrimary, textMuted),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(
+                            isAr ? 'إضافة رصيد' : 'Top Up',
+                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentGold,
+                            foregroundColor: Colors.black,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: CustomButton(
-                          text: isAr ? 'استخدام في الحجز' : 'Use in Bookings',
-                          isOutlined: true,
-                          height: 44,
+                        child: OutlinedButton(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(isAr
-                                    ? 'يمكنك اختيار الدفع عبر المحفظة مباشرة في شاشات الحجز'
-                                    : 'You can choose Wallet Payment at checkout'),
+                                content: Text(
+                                  isAr
+                                      ? 'يمكنك استخدام رصيد المحفظة مباشرة عند إتمام الحجز'
+                                      : 'You can use wallet balance directly at checkout',
+                                  style: GoogleFonts.cairo(),
+                                ),
                               ),
                             );
                           },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white38),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          child: Text(
+                            isAr ? 'استخدام بالحجز' : 'Use in Booking',
+                            style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
                         ),
                       ),
                     ],
@@ -331,11 +417,18 @@ class WalletScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
             const SizedBox(height: 28),
 
             // Transactions Header
-            Text(isAr ? 'سجل العمليات والتحويلات' : 'Transaction History',
-                style: AppTypography.titleLarge),
+            Text(
+              isAr ? 'سجل العمليات والتحويلات' : 'Transaction History',
+              style: GoogleFonts.cairo(
+                fontSize: 16.5,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 12),
 
             if (walletState.transactions.isEmpty)
@@ -343,92 +436,91 @@ class WalletScreen extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.border),
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: cardBorder, width: 1.2),
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.receipt_long_outlined,
-                        color: AppColors.textMuted, size: 48),
+                    Icon(Icons.receipt_long_outlined, color: textMuted, size: 48),
                     const SizedBox(height: 12),
                     Text(
-                      isAr
-                          ? 'لا توجد عمليات سابقة في المحفظة'
-                          : 'No previous transactions found',
-                      style: AppTypography.titleSmall
-                          .copyWith(color: AppColors.textMuted),
+                      isAr ? 'لا توجد عمليات سابقة في المحفظة' : 'No previous transactions found',
+                      style: GoogleFonts.cairo(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       isAr
                           ? 'ستظهر هنا كافة عمليات الشحن والمدفوعات فور إجرائها'
                           : 'All top-ups and booking payments will appear here',
-                      style: AppTypography.bodySmall
-                          .copyWith(color: AppColors.textMuted, fontSize: 11),
+                      style: GoogleFonts.cairo(color: textMuted, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               )
             else
-              ...walletState.transactions.map((tx) => Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: tx.isCredit
-                                    ? AppColors.success.withOpacity(0.15)
-                                    : AppColors.surface,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                tx.isCredit
-                                    ? Icons.arrow_downward
-                                    : Icons.arrow_upward,
-                                color: tx.isCredit
-                                    ? AppColors.success
-                                    : AppColors.primaryGold,
-                                size: 18,
-                              ),
+              ...walletState.transactions.map(
+                (tx) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: cardBorder, width: 1.2),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: tx.isCredit
+                                  ? AppColors.success.withValues(alpha: 0.15)
+                                  : AppColors.primaryMauve.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(tx.title, style: AppTypography.titleSmall),
-                                const SizedBox(height: 2),
-                                Text(tx.date,
-                                    style: AppTypography.bodySmall
-                                        .copyWith(fontSize: 11)),
-                              ],
+                            child: Icon(
+                              tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                              color: tx.isCredit ? AppColors.success : AppColors.accentGold,
+                              size: 18,
                             ),
-                          ],
-                        ),
-                        Text(
-                          '${tx.isCredit ? '+' : '-'}${tx.amount.toStringAsFixed(0)} ﷼',
-                          style: TextStyle(
-                            color: tx.isCredit
-                                ? AppColors.success
-                                : AppColors.error,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
                           ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tx.title,
+                                style: GoogleFonts.cairo(fontSize: 13.5, fontWeight: FontWeight.bold, color: textPrimary),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                tx.date,
+                                style: GoogleFonts.cairo(fontSize: 11, color: textMuted),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '${tx.isCredit ? '+' : '-'}${tx.amount.toStringAsFixed(0)} ${isAr ? 'ر.س' : 'SAR'}',
+                        style: GoogleFonts.cairo(
+                          color: tx.isCredit ? AppColors.success : AppColors.error,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
-                      ],
-                    ),
-                  )),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

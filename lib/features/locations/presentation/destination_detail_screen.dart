@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/localization/locale_provider.dart';
 import '../../../core/utils/share_helper.dart';
 import '../../../core/widgets/unified_item_card.dart';
@@ -14,20 +14,30 @@ import '../../museums/data/museum_repository.dart';
 import '../../guides/data/guide_repository.dart';
 import '../../guides/presentation/guide_list_screen.dart';
 
-final destinationToursProvider = FutureProvider.family<List<TourModel>, int>((ref, locationId) async {
+final destinationToursProvider =
+    FutureProvider.family<List<TourModel>, int>((ref, locationId) async {
   return ref.watch(tourRepositoryProvider).searchTours(locationId: locationId);
 });
 
-final destinationEventsProvider = FutureProvider.family<List<EventItemModel>, int>((ref, locationId) async {
-  return ref.watch(eventRepositoryProvider).searchEvents(locationId: locationId);
+final destinationEventsProvider =
+    FutureProvider.family<List<EventItemModel>, int>((ref, locationId) async {
+  return ref
+      .watch(eventRepositoryProvider)
+      .searchEvents(locationId: locationId);
 });
 
-final destinationMuseumsProvider = FutureProvider.family<List<MuseumModel>, int>((ref, locationId) async {
-  return ref.watch(museumRepositoryProvider).searchMuseums(locationId: locationId);
+final destinationMuseumsProvider =
+    FutureProvider.family<List<MuseumModel>, int>((ref, locationId) async {
+  return ref
+      .watch(museumRepositoryProvider)
+      .searchMuseums(locationId: locationId);
 });
 
-final destinationGuidesProvider = FutureProvider.family<List<GuideModel>, int>((ref, locationId) async {
-  return ref.watch(guideRepositoryProvider).searchGuides(locationId: locationId);
+final destinationGuidesProvider =
+    FutureProvider.family<List<GuideModel>, int>((ref, locationId) async {
+  return ref
+      .watch(guideRepositoryProvider)
+      .searchGuides(locationId: locationId);
 });
 
 class DestinationDetailScreen extends ConsumerStatefulWidget {
@@ -41,25 +51,20 @@ class DestinationDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<DestinationDetailScreen> createState() => _DestinationDetailScreenState();
+  ConsumerState<DestinationDetailScreen> createState() =>
+      _DestinationDetailScreenState();
 }
 
-class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScreen> {
+class _DestinationDetailScreenState
+    extends ConsumerState<DestinationDetailScreen> {
   int _selectedTab = 0; // 0: Tours, 1: Events, 2: Museums, 3: Guides
-
-  final List<Color> _tabColors = [
-    const Color(0xFFFBBF24), // Tours - Amber
-    const Color(0xFFF43F5E), // Events - Ruby Crimson
-    const Color(0xFFC084FC), // Museums - Purple
-    const Color(0xFF34D399), // Guides - Emerald
-  ];
 
   String _getCityBanner(int id) {
     switch (id) {
       case 1:
-        return 'https://staging.modeefe.com/uploads/0000/6/2026/06/03/1395849838834267800-jpg-webp.jpg';
+        return 'https://staging.modeef-e.com/uploads/0000/6/2026/06/03/1395849838834267800-jpg-webp.jpg';
       case 2:
-        return 'https://staging.modeefe.com/uploads/0000/6/2026/06/03/almzarat-aldyny.jpg';
+        return 'https://staging.modeef-e.com/uploads/0000/6/2026/06/03/almzarat-aldyny.jpg';
       case 3:
         return 'https://images.unsplash.com/photo-1590073844006-33379778ae09?w=800&q=80';
       case 4:
@@ -91,47 +96,76 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
   Widget build(BuildContext context) {
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     final cityName = _getCityName(widget.locationId, isAr);
     final bannerImg = _getCityBanner(widget.locationId);
 
     return Scaffold(
+      backgroundColor: bg,
       body: CustomScrollView(
         slivers: [
           // Hero Banner
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
-            backgroundColor: AppColors.background,
+            backgroundColor:
+                isDark ? const Color(0xFF140E1B) : AppColors.primaryMauve,
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.black.withOpacity(0.55),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.pop(),
+              child: GestureDetector(
+                onTap: () => context.pop(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_back_ios_new,
+                      color: Colors.white, size: 16),
                 ),
               ),
             ),
             actions: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: CircleAvatar(
-                  backgroundColor: Colors.black.withOpacity(0.55),
-                  child: IconButton(
-                    icon: const Icon(Icons.share_outlined, color: Colors.white),
-                    onPressed: () => ShareHelper.shareItem(
-                      context: context,
-                      title: cityName,
-                      category: isAr ? 'وجهة سياحية' : 'Destination',
-                      id: widget.locationId.toString(),
-                      type: 'destination',
+                child: GestureDetector(
+                  onTap: () => ShareHelper.shareItem(
+                    context: context,
+                    title: cityName,
+                    category: isAr ? 'وجهة سياحية' : 'Destination',
+                    id: widget.locationId.toString(),
+                    type: 'destination',
+                  ),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: BoxShape.circle,
                     ),
+                    child: const Icon(Icons.share_outlined,
+                        color: Colors.white, size: 18),
                   ),
                 ),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(cityName, style: AppTypography.headingSmall.copyWith(color: Colors.white)),
+              title: Text(
+                cityName,
+                style: GoogleFonts.cairo(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
               centerTitle: true,
               background: Stack(
                 fit: StackFit.expand,
@@ -146,11 +180,12 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.4),
+                          Colors.black.withValues(alpha: 0.35),
                           Colors.transparent,
-                          AppColors.background.withOpacity(0.95),
-                          AppColors.background,
+                          bg.withValues(alpha: 0.9),
+                          bg,
                         ],
+                        stops: const [0.0, 0.4, 0.85, 1.0],
                       ),
                     ),
                   ),
@@ -162,30 +197,62 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
           // Tabs & Filter Content
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     isAr
-                        ? 'استكشف كافة التجارب والفعاليات والمتاحف والمرشدين في $cityName'
-                        : 'Explore all trails, events, museums and guides in $cityName',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                        ? 'استكشف كافة المسارات والفعاليات والمتاحف في $cityName'
+                        : 'Explore all trails, events, and museums in $cityName',
+                    style: GoogleFonts.cairo(fontSize: 13, color: textMuted),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // Segmented Tabs
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildTab(0, isAr ? 'المسارات والتجارب' : 'Trails & Tours', Icons.alt_route, _tabColors[0]),
+                        _buildTab(
+                            0,
+                            isAr ? 'المسارات' : 'Trails',
+                            Icons.alt_route,
+                            isDark,
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textMuted),
                         const SizedBox(width: 8),
-                        _buildTab(1, isAr ? 'الفعاليات والمواسم' : 'Events', Icons.festival_outlined, _tabColors[1]),
+                        _buildTab(
+                            1,
+                            isAr ? 'الفعاليات' : 'Events',
+                            Icons.festival_outlined,
+                            isDark,
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textMuted),
                         const SizedBox(width: 8),
-                        _buildTab(2, isAr ? 'المتاحف' : 'Museums', Icons.account_balance_outlined, _tabColors[2]),
+                        _buildTab(
+                            2,
+                            isAr ? 'المتاحف' : 'Museums',
+                            Icons.account_balance_outlined,
+                            isDark,
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textMuted),
                         const SizedBox(width: 8),
-                        _buildTab(3, isAr ? 'المرشدون' : 'Guides', Icons.person_pin_outlined, _tabColors[3]),
+                        _buildTab(
+                            3,
+                            isAr ? 'المرشدون' : 'Guides',
+                            Icons.person_pin_outlined,
+                            isDark,
+                            cardBg,
+                            cardBorder,
+                            textPrimary,
+                            textMuted),
                       ],
                     ),
                   ),
@@ -195,43 +262,40 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
           ),
 
           // Tab Content
-          _buildActiveTabContent(isAr, cityName),
+          _buildActiveTabContent(isAr, cityName, textMuted),
         ],
       ),
     );
   }
 
-  Widget _buildTab(int index, String label, IconData icon, Color color) {
+  Widget _buildTab(int index, String label, IconData icon, bool isDark,
+      Color cardBg, Color cardBorder, Color textPrimary, Color textMuted) {
     final isSelected = _selectedTab == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedTab = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.card,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isSelected ? color : AppColors.border),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withOpacity(0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
+          color: isSelected
+              ? AppColors.primaryMauve
+              : (isDark ? const Color(0xFF1E1624) : const Color(0xFFECE7EF)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryMauve : cardBorder,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: isSelected ? AppColors.textDark : color),
+            Icon(icon, size: 16, color: isSelected ? Colors.white : textMuted),
             const SizedBox(width: 6),
             Text(
               label,
-              style: TextStyle(
-                color: isSelected ? AppColors.textDark : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
+              style: GoogleFonts.cairo(
+                color: isSelected ? Colors.white : textMuted,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12.5,
               ),
             ),
           ],
@@ -240,34 +304,44 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
     );
   }
 
-  Widget _buildActiveTabContent(bool isAr, String cityName) {
+  Widget _buildActiveTabContent(bool isAr, String cityName, Color textMuted) {
     switch (_selectedTab) {
       case 0:
-        // Tours & Trails in City
-        final toursAsync = ref.watch(destinationToursProvider(widget.locationId));
+        final toursAsync =
+            ref.watch(destinationToursProvider(widget.locationId));
         return toursAsync.when(
           data: (tours) {
             if (tours.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text(isAr ? 'لا توجد مسارات متاحة حالياً في هذه الوجهة' : 'No trails available in this destination', style: AppTypography.bodyMedium)),
+                child: Center(
+                  child: Text(
+                    isAr
+                        ? 'لا توجد مسارات متاحة حالياً في هذه الوجهة'
+                        : 'No trails available in this destination',
+                    style: GoogleFonts.cairo(color: textMuted, fontSize: 14),
+                  ),
+                ),
               );
             }
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, idx) {
                     final t = tours[idx];
-                    return UnifiedItemCard(
-                      title: t.title,
-                      imageUrl: t.imageUrl,
-                      locationName: t.locationName ?? cityName,
-                      rating: t.rating,
-                      subtitle: t.duration,
-                      price: t.formattedPrice,
-                      accentColor: _tabColors[0],
-                      onTap: () => context.push('/experience/${t.id}'),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UnifiedItemCard(
+                        title: t.title,
+                        imageUrl: t.imageUrl,
+                        locationName: t.locationName ?? cityName,
+                        rating: t.rating,
+                        subtitle: t.duration,
+                        price: t.formattedPrice,
+                        accentColor: AppColors.primaryMauve,
+                        onTap: () => context.push('/experience/${t.id}'),
+                      ),
                     );
                   },
                   childCount: tours.length,
@@ -275,36 +349,60 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
               ),
             );
           },
-          loading: () => const SliverFillRemaining(hasScrollBody: false, child: Center(child: CircularProgressIndicator(color: AppColors.primaryGold))),
-          error: (_, __) => SliverFillRemaining(hasScrollBody: false, child: Center(child: Text(isAr ? 'تعذر تحميل المسارات' : 'Failed to load trails'))),
+          loading: () => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryMauve)),
+          ),
+          error: (_, __) => SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                isAr ? 'تعذر تحميل المسارات' : 'Failed to load trails',
+                style: GoogleFonts.cairo(color: textMuted),
+              ),
+            ),
+          ),
         );
 
       case 1:
-        // Events in City
-        final eventsAsync = ref.watch(destinationEventsProvider(widget.locationId));
+        final eventsAsync =
+            ref.watch(destinationEventsProvider(widget.locationId));
         return eventsAsync.when(
           data: (events) {
             if (events.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text(isAr ? 'لا توجد فعاليات في هذه الوجهة' : 'No events in this destination', style: AppTypography.bodyMedium)),
+                child: Center(
+                  child: Text(
+                    isAr
+                        ? 'لا توجد فعاليات في هذه الوجهة'
+                        : 'No events in this destination',
+                    style: GoogleFonts.cairo(color: textMuted, fontSize: 14),
+                  ),
+                ),
               );
             }
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, idx) {
                     final ev = events[idx];
-                    return UnifiedItemCard(
-                      title: ev.title,
-                      imageUrl: ev.imageUrl,
-                      locationName: ev.location.isNotEmpty ? ev.location : cityName,
-                      rating: 4.8,
-                      subtitle: ev.duration,
-                      price: ev.price,
-                      accentColor: _tabColors[1],
-                      onTap: () => context.push('/event/${ev.id}'),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UnifiedItemCard(
+                        title: ev.title,
+                        imageUrl: ev.imageUrl,
+                        locationName:
+                            ev.location.isNotEmpty ? ev.location : cityName,
+                        rating: ev.rating,
+                        subtitle: ev.duration,
+                        price: ev.price,
+                        accentColor: AppColors.primaryMauve,
+                        onTap: () => context.push('/event/${ev.id}'),
+                      ),
                     );
                   },
                   childCount: events.length,
@@ -312,36 +410,59 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
               ),
             );
           },
-          loading: () => const SliverFillRemaining(hasScrollBody: false, child: Center(child: CircularProgressIndicator(color: AppColors.primaryGold))),
-          error: (_, __) => SliverFillRemaining(hasScrollBody: false, child: Center(child: Text(isAr ? 'تعذر تحميل الفعاليات' : 'Failed to load events'))),
+          loading: () => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryMauve)),
+          ),
+          error: (_, __) => SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                isAr ? 'تعذر تحميل الفعاليات' : 'Failed to load events',
+                style: GoogleFonts.cairo(color: textMuted),
+              ),
+            ),
+          ),
         );
 
       case 2:
-        // Museums in City
-        final museumsAsync = ref.watch(destinationMuseumsProvider(widget.locationId));
+        final museumsAsync =
+            ref.watch(destinationMuseumsProvider(widget.locationId));
         return museumsAsync.when(
           data: (museums) {
             if (museums.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text(isAr ? 'لا توجد متاحف في هذه الوجهة' : 'No museums in this destination', style: AppTypography.bodyMedium)),
+                child: Center(
+                  child: Text(
+                    isAr
+                        ? 'لا توجد متاحف في هذه الوجهة'
+                        : 'No museums in this destination',
+                    style: GoogleFonts.cairo(color: textMuted, fontSize: 14),
+                  ),
+                ),
               );
             }
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, idx) {
                     final m = museums[idx];
-                    return UnifiedItemCard(
-                      title: m.title,
-                      imageUrl: m.imageUrl,
-                      locationName: m.locationName ?? cityName,
-                      rating: m.rating,
-                      subtitle: m.workingHours,
-                      price: m.formattedPrice,
-                      accentColor: _tabColors[2],
-                      onTap: () => context.push('/museum/${m.id}'),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UnifiedItemCard(
+                        title: m.title,
+                        imageUrl: m.imageUrl,
+                        locationName: m.locationName ?? cityName,
+                        rating: m.rating,
+                        subtitle: m.workingHours,
+                        price: m.formattedPrice,
+                        accentColor: AppColors.primaryMauve,
+                        onTap: () => context.push('/museum/${m.id}'),
+                      ),
                     );
                   },
                   childCount: museums.length,
@@ -349,37 +470,60 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
               ),
             );
           },
-          loading: () => const SliverFillRemaining(hasScrollBody: false, child: Center(child: CircularProgressIndicator(color: AppColors.primaryGold))),
-          error: (_, __) => SliverFillRemaining(hasScrollBody: false, child: Center(child: Text(isAr ? 'تعذر تحميل المتاحف' : 'Failed to load museums'))),
+          loading: () => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryMauve)),
+          ),
+          error: (_, __) => SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                isAr ? 'تعذر تحميل المتاحف' : 'Failed to load museums',
+                style: GoogleFonts.cairo(color: textMuted),
+              ),
+            ),
+          ),
         );
 
       case 3:
       default:
-        // Guides in City
-        final guidesAsync = ref.watch(destinationGuidesProvider(widget.locationId));
+        final guidesAsync =
+            ref.watch(destinationGuidesProvider(widget.locationId));
         return guidesAsync.when(
           data: (guides) {
             if (guides.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text(isAr ? 'لا يوجد مرشدون سياحيون متاحون في هذه الوجهة' : 'No guides in this destination', style: AppTypography.bodyMedium)),
+                child: Center(
+                  child: Text(
+                    isAr
+                        ? 'لا يوجد مرشدون سياحيون متاحون في هذه الوجهة'
+                        : 'No guides in this destination',
+                    style: GoogleFonts.cairo(color: textMuted, fontSize: 14),
+                  ),
+                ),
               );
             }
             return SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 110),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, idx) {
                     final g = guides[idx];
-                    return UnifiedItemCard(
-                      title: g.name,
-                      imageUrl: g.imageUrl,
-                      locationName: g.title,
-                      rating: g.rating,
-                      subtitle: g.languages.join(' • '),
-                      price: g.hourlyRate,
-                      accentColor: _tabColors[3],
-                      onTap: () => context.push('/guide/${g.id}'),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: UnifiedItemCard(
+                        title: g.name,
+                        imageUrl: g.imageUrl,
+                        locationName: g.title,
+                        rating: g.rating,
+                        subtitle: g.languages.join(' • '),
+                        price: g.hourlyRate,
+                        accentColor: AppColors.primaryMauve,
+                        onTap: () => context.push('/guide/${g.id}'),
+                      ),
                     );
                   },
                   childCount: guides.length,
@@ -387,8 +531,21 @@ class _DestinationDetailScreenState extends ConsumerState<DestinationDetailScree
               ),
             );
           },
-          loading: () => const SliverFillRemaining(hasScrollBody: false, child: Center(child: CircularProgressIndicator(color: AppColors.primaryGold))),
-          error: (_, __) => SliverFillRemaining(hasScrollBody: false, child: Center(child: Text(isAr ? 'تعذر تحميل المرشدين' : 'Failed to load guides'))),
+          loading: () => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+                child:
+                    CircularProgressIndicator(color: AppColors.primaryMauve)),
+          ),
+          error: (_, __) => SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Text(
+                isAr ? 'تعذر تحميل المرشدين' : 'Failed to load guides',
+                style: GoogleFonts.cairo(color: textMuted),
+              ),
+            ),
+          ),
         );
     }
   }

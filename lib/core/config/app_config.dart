@@ -8,11 +8,11 @@ class AppConfig {
   static String get baseUrl {
     switch (currentEnvironment) {
       case Environment.dev:
-        return 'http://127.0.0.1:8000/api';
+        return 'https://staging.modeef-e.com/api';
       case Environment.staging:
-        return 'https://staging.modeefe.com/api';
+        return 'https://staging.modeef-e.com/api';
       case Environment.prod:
-        return 'https://modeefe.com/api';
+        return 'https://staging.modeef-e.com/api';
     }
   }
 

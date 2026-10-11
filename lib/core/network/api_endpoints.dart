@@ -2,7 +2,7 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // Base URL (Laravel API)
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String baseUrl = 'https://staging.modeef-e.com/api';
 
   // ==================== 1. AUTH ====================
   static const String register = '/auth/register';
@@ -24,15 +24,19 @@ class ApiEndpoints {
 
   // ==================== 3. WISHLIST ====================
   static const String wishlist = '/user/wishlist';
-  static String addToWishlist(String serviceType, dynamic id) => '/user/wishlist/$serviceType/$id';
-  static String removeFromWishlist(String serviceType, dynamic id) => '/user/wishlist/$serviceType/$id';
+  static String addToWishlist(String serviceType, dynamic id) =>
+      '/user/wishlist/$serviceType/$id';
+  static String removeFromWishlist(String serviceType, dynamic id) =>
+      '/user/wishlist/$serviceType/$id';
 
   // ==================== 4. BOOKING HISTORY & TICKETS ====================
   static const String bookingHistory = '/user/booking-history';
   static const String myTickets = '/user/ticket';
-  static String ticketQrImage(dynamic ticketId) => '/user/ticket/qr-image/$ticketId';
+  static String ticketQrImage(dynamic ticketId) =>
+      '/user/ticket/qr-image/$ticketId';
   static const String manageTickets = '/user/booking/ticket';
-  static String scanTicket(dynamic bookingId, dynamic ticketId) => '/user/booking/ticket/scan/$bookingId/$ticketId';
+  static String scanTicket(dynamic bookingId, dynamic ticketId) =>
+      '/user/booking/ticket/scan/$bookingId/$ticketId';
   static const String generateQr = '/user/qr-code';
 
   // ==================== 5. CONTENT & DISCOVERY ====================
@@ -96,7 +100,8 @@ class ApiEndpoints {
   static const String addEnquiry = '/booking/addEnquiry';
   static const String doCheckout = '/booking/doCheckout';
   static String bookingDetail(String code) => '/booking/$code';
-  static String checkBookingStatus(String code) => '/booking/$code/check-status';
+  static String checkBookingStatus(String code) =>
+      '/booking/$code/check-status';
 
   // ==================== 13. CART & SHOP ORDERS ====================
   static const String cart = '/cart';

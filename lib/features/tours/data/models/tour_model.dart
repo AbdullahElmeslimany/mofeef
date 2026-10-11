@@ -222,6 +222,7 @@ class TourModel {
   final List<PersonTypeModel> personTypes;
   final List<ExtraPriceModel> extraPrices;
   final Map<String, dynamic>? openHours;
+  final String? author;
 
   const TourModel({
     required this.id,
@@ -249,6 +250,7 @@ class TourModel {
     this.personTypes = const [],
     this.extraPrices = const [],
     this.openHours,
+    this.author,
   });
 
   String get formattedPrice => '${(salePrice ?? price).toStringAsFixed(0)} ﷼';
@@ -367,6 +369,7 @@ class TourModel {
       personTypes: parsedPersonTypes,
       extraPrices: parsedExtraPrices,
       openHours: json['open_hours'] is Map<String, dynamic> ? json['open_hours'] as Map<String, dynamic> : null,
+      author: json['author'] is Map ? json['author']['name']?.toString() : json['author']?.toString(),
     );
   }
 }

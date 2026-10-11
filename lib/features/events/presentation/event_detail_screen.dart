@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/localization/locale_provider.dart';
 import '../../../core/utils/share_helper.dart';
-import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/image_viewer_dialog.dart';
 import '../../booking/data/booking_draft.dart';
 import '../../wishlist/data/wishlist_repository.dart';
@@ -42,8 +42,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final eventAsync = ref.watch(eventDetailProvider(widget.eventId));
     final currentLocale = ref.watch(localeProvider);
     final isAr = currentLocale.languageCode == 'ar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final surfaceBg = isDark ? const Color(0xFF161220) : const Color(0xFFFAF7FC);
 
     return Scaffold(
+      backgroundColor: bg,
       body: eventAsync.when(
         data: (event) {
           final images =
@@ -56,14 +65,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   SliverAppBar(
                     expandedHeight: 340,
                     pinned: true,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: bg,
                     leading: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
-                        backgroundColor: Colors.black.withOpacity(0.55),
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
                         child: IconButton(
-                          icon:
-                              const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
                           onPressed: () => context.pop(),
                         ),
                       ),
@@ -73,7 +81,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: Icon(
                               ref
@@ -85,7 +93,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                       .watch(wishlistProvider)
                                       .isFavorite(widget.eventId, 'event')
                                   ? AppColors.error
-                                  : AppColors.primaryGold,
+                                  : AppColors.accentGold,
                             ),
                             onPressed: () async {
                               final added = await ref
@@ -108,16 +116,20 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(added
-                                        ? (isAr
-                                            ? 'تمت إضافة الفعالية إلى المفضلة ❤️'
-                                            : 'Added event to favorites ❤️')
-                                        : (isAr
-                                            ? 'تمت إزالة الفعالية من المفضلة'
-                                            : 'Removed from favorites')),
+                                    content: Text(
+                                      added
+                                          ? (isAr
+                                              ? 'تمت إضافة الفعالية إلى المفضلة ❤️'
+                                              : 'Added event to favorites ❤️')
+                                          : (isAr
+                                              ? 'تمت إزالة الفعالية من المفضلة'
+                                              : 'Removed from favorites'),
+                                      style: GoogleFonts.cairo(),
+                                    ),
                                     backgroundColor: added
-                                        ? AppColors.primaryGold
-                                        : AppColors.card,
+                                        ? AppColors.primaryMauve
+                                        : cardBg,
+                                    behavior: SnackBarBehavior.floating,
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -130,7 +142,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: const Icon(Icons.share_outlined,
                                 color: Colors.white),
@@ -164,9 +176,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                   imageUrl: images[index],
                                   fit: BoxFit.cover,
                                   errorWidget: (_, __, ___) => Container(
-                                    color: AppColors.surface,
+                                    color: surfaceBg,
                                     child: const Icon(Icons.festival_outlined,
-                                        color: AppColors.primaryGold, size: 80),
+                                        color: AppColors.accentGold, size: 80),
                                   ),
                                 ),
                               );
@@ -178,10 +190,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  Colors.black.withOpacity(0.5),
+                                  Colors.black.withValues(alpha: 0.5),
                                   Colors.transparent,
-                                  AppColors.background.withOpacity(0.95),
-                                  AppColors.background,
+                                  bg.withValues(alpha: 0.8),
+                                  bg,
                                 ],
                                 stops: const [0.0, 0.4, 0.85, 1.0],
                               ),
@@ -196,16 +208,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.65),
+                                  color: Colors.black.withValues(alpha: 0.65),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.white24),
                                 ),
                                 child: Text(
                                   '📸 ${_currentGalleryIndex + 1} / ${images.length}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.cairo(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -226,108 +239,157 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: AppColors.goldGlow,
+                                  color: AppColors.primaryMauve.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: AppColors.primaryGold
-                                          .withOpacity(0.4)),
+                                    color: AppColors.primaryMauve.withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: Text(
                                   isAr
                                       ? 'فعالية وموسم سعودي'
                                       : 'Saudi Event & Season',
-                                  style: const TextStyle(
-                                      color: AppColors.primaryGold,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.cairo(
+                                    color: AppColors.primaryMauve,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               Row(
                                 children: [
-                                  const Icon(Icons.star,
-                                      color: AppColors.primaryGold, size: 18),
+                                  const Icon(Icons.star_rounded,
+                                      color: AppColors.accentGold, size: 20),
                                   const SizedBox(width: 4),
                                   Text(
                                     isAr ? '4.9 (مميز)' : '4.9 (Featured)',
-                                    style: AppTypography.titleSmall,
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: textPrimary,
+                                    ),
                                   ),
                                 ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Text(event.title, style: AppTypography.headingMedium),
+                          Text(
+                            event.title,
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                              height: 1.3,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               const Icon(Icons.location_on_outlined,
-                                  color: AppColors.primaryGold, size: 18),
+                                  color: AppColors.accentGold, size: 18),
                               const SizedBox(width: 6),
                               Expanded(
-                                child: Text(event.location,
-                                    style: AppTypography.bodyMedium),
+                                child: Text(
+                                  event.location,
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 13,
+                                    color: textSub,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 16),
+
+                          // Quick Info Box
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.card,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.border),
+                              color: cardBg,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: cardBorder),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
-                                _buildInfo(Icons.calendar_today,
-                                    isAr ? 'التاريخ' : 'Date', event.date),
-                                Container(
-                                    width: 1,
-                                    height: 30,
-                                    color: AppColors.border),
                                 _buildInfo(
-                                    Icons.schedule,
-                                    isAr ? 'المدة' : 'Duration',
-                                    event.duration),
+                                  icon: Icons.calendar_today_outlined,
+                                  title: isAr ? 'التاريخ' : 'Date',
+                                  value: event.date,
+                                  textPrimary: textPrimary,
+                                  textSub: textSub,
+                                ),
                                 Container(
-                                    width: 1,
-                                    height: 30,
-                                    color: AppColors.border),
+                                  width: 1,
+                                  height: 32,
+                                  color: cardBorder,
+                                ),
                                 _buildInfo(
-                                    Icons.access_time,
-                                    isAr ? 'وقت البدء' : 'Start Time',
-                                    event.startTime ??
-                                        (isAr ? '٥:٠٠ م' : '5:00 PM')),
+                                  icon: Icons.schedule_outlined,
+                                  title: isAr ? 'المدة' : 'Duration',
+                                  value: event.duration,
+                                  textPrimary: textPrimary,
+                                  textSub: textSub,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 32,
+                                  color: cardBorder,
+                                ),
+                                _buildInfo(
+                                  icon: Icons.access_time_rounded,
+                                  title: isAr ? 'وقت البدء' : 'Start Time',
+                                  value: event.startTime ??
+                                      (isAr ? '٥:٠٠ م' : '5:00 PM'),
+                                  textPrimary: textPrimary,
+                                  textSub: textSub,
+                                ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Text(isAr ? 'عن الفعالية' : 'About Event',
-                              style: AppTypography.titleLarge),
+
+                          // Description
+                          Text(
+                            isAr ? 'عن الفعالية' : 'About Event',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             event.description,
-                            style:
-                                AppTypography.bodyLarge.copyWith(height: 1.7),
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              height: 1.7,
+                              color: textSub,
+                            ),
                           ),
                           const SizedBox(height: 24),
 
                           // Ticket Types Available
                           if (event.ticketTypes.isNotEmpty) ...[
                             Text(
-                                isAr
-                                    ? 'فئات التذاكر المتاحة'
-                                    : 'Available Ticket Categories',
-                                style: AppTypography.titleLarge),
+                              isAr
+                                  ? 'فئات التذاكر المتاحة'
+                                  : 'Available Ticket Categories',
+                              style: GoogleFonts.cairo(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             ...event.ticketTypes.map((t) => Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: AppColors.card,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: AppColors.border),
+                                    color: cardBg,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: cardBorder),
                                   ),
                                   child: Row(
                                     mainAxisAlignment:
@@ -336,18 +398,29 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                       Row(
                                         children: [
                                           const Icon(
-                                              Icons
-                                                  .confirmation_number_outlined,
-                                              color: AppColors.primaryGold,
-                                              size: 20),
+                                            Icons.confirmation_number_outlined,
+                                            color: AppColors.accentGold,
+                                            size: 20,
+                                          ),
                                           const SizedBox(width: 10),
-                                          Text(t.getDisplayName(isAr),
-                                              style: AppTypography.titleSmall),
+                                          Text(
+                                            t.getDisplayName(isAr),
+                                            style: GoogleFonts.cairo(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: textPrimary,
+                                            ),
+                                          ),
                                         ],
                                       ),
-                                      Text('${t.price.toStringAsFixed(0)} ﷼',
-                                          style: AppTypography.price
-                                              .copyWith(fontSize: 15)),
+                                      Text(
+                                        '${t.price.toStringAsFixed(0)} ﷼',
+                                        style: GoogleFonts.cairo(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          color: AppColors.accentGold,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 )),
@@ -356,24 +429,29 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
                           // Interactive Google Map Section
                           Text(
-                              isAr
-                                  ? 'الموقع الجغرافي والوصول'
-                                  : 'Location & Directions',
-                              style: AppTypography.titleLarge),
+                            isAr
+                                ? 'الموقع الجغرافي والوصول'
+                                : 'Location & Directions',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           GestureDetector(
                             onTap: () => _openMap(event),
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.card,
+                                color: cardBg,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
-                                    color:
-                                        AppColors.primaryGold.withOpacity(0.5)),
+                                  color: AppColors.accentGold.withValues(alpha: 0.4),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -382,13 +460,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(14),
+                                    padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: AppColors.goldGlow,
+                                      color: AppColors.accentGold.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                    child: const Icon(Icons.directions_outlined,
-                                        color: AppColors.primaryGold, size: 28),
+                                    child: const Icon(
+                                      Icons.directions_outlined,
+                                      color: AppColors.accentGold,
+                                      size: 26,
+                                    ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
@@ -400,25 +481,27 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                                           event.location,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              color: AppColors.textPrimary,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14),
+                                          style: GoogleFonts.cairo(
+                                            color: textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 3),
                                         Text(
                                           isAr
                                               ? 'انقر لفتح الاتجاهات المباشرة عبر خرائط Google'
                                               : 'Tap to open directions in Google Maps',
-                                          style: const TextStyle(
-                                              color: AppColors.primaryGold,
-                                              fontSize: 11),
+                                          style: GoogleFonts.cairo(
+                                            color: AppColors.accentGold,
+                                            fontSize: 11,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                   const Icon(Icons.open_in_new,
-                                      color: AppColors.primaryGold, size: 20),
+                                      color: AppColors.accentGold, size: 18),
                                 ],
                               ),
                             ),
@@ -427,83 +510,130 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SliverToBoxAdapter(child: SizedBox(height: 30)),
                 ],
               ),
+
+              // Bottom Sticky Booking Bar
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    14,
+                    20,
+                    MediaQuery.of(context).padding.bottom + 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    border:
-                        const Border(top: BorderSide(color: AppColors.border)),
+                    color: cardBg,
+                    border: Border(top: BorderSide(color: cardBorder)),
                     boxShadow: [
                       BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, -4)),
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
                     ],
                   ),
-                  child: SafeArea(
-                    child: Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                                isAr
-                                    ? 'يبدأ سعر التذكرة من'
-                                    : 'Tickets start from',
-                                style: AppTypography.bodySmall),
-                            Text(event.price, style: AppTypography.price),
-                          ],
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: CustomButton(
-                            text: isAr
-                                ? 'احجز تذكرتك وموعدك'
-                                : 'Book Tickets & Date',
+                  child: Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isAr
+                                ? 'يبدأ سعر التذكرة من'
+                                : 'Tickets start from',
+                            style: GoogleFonts.cairo(fontSize: 11, color: textSub),
+                          ),
+                          Text(
+                            event.price,
+                            style: GoogleFonts.cairo(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.accentGold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryMauve,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
                             onPressed: () =>
-                                _showEventBookingModal(context, event, isAr),
+                                _showEventBookingModal(context, event, isAr, isDark),
+                            child: Text(
+                              isAr
+                                  ? 'احجز تذكرتك وموعدك'
+                                  : 'Book Tickets & Date',
+                              style: GoogleFonts.cairo(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           );
         },
-        loading: () => const Scaffold(
-          body: Center(
-              child: CircularProgressIndicator(color: AppColors.primaryGold)),
+        loading: () => Scaffold(
+          backgroundColor: bg,
+          body: const Center(
+            child: CircularProgressIndicator(color: AppColors.accentGold),
+          ),
         ),
         error: (err, _) => Scaffold(
-          appBar: AppBar(),
+          backgroundColor: bg,
+          appBar: AppBar(backgroundColor: Colors.transparent),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline,
-                    color: AppColors.error, size: 48),
+                const Icon(Icons.error_outline_rounded,
+                    color: AppColors.error, size: 56),
                 const SizedBox(height: 12),
                 Text(
-                    isAr
-                        ? 'تعذر تحميل تفاصيل الفعالية'
-                        : 'Failed to load event details',
-                    style: AppTypography.titleMedium),
-                const SizedBox(height: 12),
+                  isAr
+                      ? 'تعذر تحميل تفاصيل الفعالية'
+                      : 'Failed to load event details',
+                  style: GoogleFonts.cairo(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMauve,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
                   onPressed: () =>
                       ref.refresh(eventDetailProvider(widget.eventId)),
-                  child: Text(isAr ? 'إعادة المحاولة' : 'Retry'),
+                  child: Text(
+                    isAr ? 'إعادة المحاولة' : 'Retry',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -514,26 +644,48 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   void _showEventBookingModal(
-      BuildContext context, EventItemModel event, bool isAr) {
+      BuildContext context, EventItemModel event, bool isAr, bool isDark) {
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => _EventBookingBottomSheet(event: event, isAr: isAr),
+      builder: (ctx) => _EventBookingBottomSheet(
+        event: event,
+        isAr: isAr,
+        isDark: isDark,
+      ),
     );
   }
 
-  Widget _buildInfo(IconData icon, String title, String value) {
+  Widget _buildInfo({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color textPrimary,
+    required Color textSub,
+  }) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.primaryGold, size: 20),
+        Icon(icon, color: AppColors.accentGold, size: 20),
         const SizedBox(height: 4),
-        Text(title, style: AppTypography.bodySmall),
+        Text(
+          title,
+          style: GoogleFonts.cairo(fontSize: 11, color: textSub),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: AppTypography.titleSmall.copyWith(fontSize: 12)),
+        Text(
+          value,
+          style: GoogleFonts.cairo(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
       ],
     );
   }
@@ -542,8 +694,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 class _EventBookingBottomSheet extends StatefulWidget {
   final EventItemModel event;
   final bool isAr;
+  final bool isDark;
 
-  const _EventBookingBottomSheet({required this.event, required this.isAr});
+  const _EventBookingBottomSheet({
+    required this.event,
+    required this.isAr,
+    required this.isDark,
+  });
 
   @override
   State<_EventBookingBottomSheet> createState() =>
@@ -598,13 +755,18 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isAr = widget.isAr;
+    final isDark = widget.isDark;
     final total = _calculateTotal();
+
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textSub = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
         right: 20,
-        top: 20,
+        top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: SingleChildScrollView(
@@ -617,26 +779,34 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2)),
+                  color: cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(isAr ? 'خيارات وتذاكر الفعالية' : 'Event Booking Options',
-                    style: AppTypography.titleMedium),
+                Text(
+                  isAr ? 'خيارات وتذاكر الفعالية' : 'Event Booking Options',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  icon: Icon(Icons.close_rounded, color: textSub),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: CachedNetworkImage(
                     imageUrl: widget.event.imageUrl,
                     width: 56,
@@ -649,23 +819,39 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.event.title,
-                          style: AppTypography.titleMedium,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        widget.event.title,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 4),
-                      Text(widget.event.location,
-                          style: AppTypography.bodySmall),
+                      Text(
+                        widget.event.location,
+                        style: GoogleFonts.cairo(fontSize: 12, color: textSub),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-            const Divider(color: AppColors.border, height: 28),
+            const SizedBox(height: 16),
+            Divider(color: cardBorder, height: 1),
+            const SizedBox(height: 16),
 
             // Date Selector
-            Text(isAr ? 'تاريخ الحضور' : 'Event Date',
-                style: AppTypography.titleSmall),
+            Text(
+              isAr ? 'تاريخ الحضور' : 'Event Date',
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 10),
             GestureDetector(
               onTap: () async {
@@ -677,11 +863,17 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
-                        colorScheme: const ColorScheme.dark(
-                          primary: AppColors.primaryGold,
-                          surface: AppColors.card,
-                          onSurface: AppColors.textPrimary,
-                        ),
+                        colorScheme: isDark
+                            ? const ColorScheme.dark(
+                                primary: AppColors.accentGold,
+                                surface: AppColors.darkCard,
+                                onSurface: AppColors.darkTextPrimary,
+                              )
+                            : const ColorScheme.light(
+                                primary: AppColors.primaryMauve,
+                                surface: AppColors.lightCard,
+                                onSurface: AppColors.lightTextPrimary,
+                              ),
                       ),
                       child: child!,
                     );
@@ -695,29 +887,36 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  color: isDark ? const Color(0xFF140F1B) : const Color(0xFFFAF7FC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: cardBorder),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.calendar_month,
-                            color: AppColors.primaryGold, size: 20),
+                        const Icon(Icons.calendar_month_rounded,
+                            color: AppColors.accentGold, size: 20),
                         const SizedBox(width: 10),
                         Text(
                           '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-                          style: AppTypography.titleSmall,
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: textPrimary,
+                          ),
                         ),
                       ],
                     ),
-                    Text(isAr ? 'تغيير التاريخ' : 'Change Date',
-                        style: const TextStyle(
-                            color: AppColors.primaryGold,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      isAr ? 'تغيير التاريخ' : 'Change Date',
+                      style: GoogleFonts.cairo(
+                        color: AppColors.primaryMauve,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -725,8 +924,14 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
             const SizedBox(height: 20),
 
             // Ticket Options
-            Text(isAr ? 'خيارات وفئات التذاكر' : 'Ticket Categories',
-                style: AppTypography.titleSmall),
+            Text(
+              isAr ? 'خيارات وفئات التذاكر' : 'Ticket Categories',
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 10),
 
             if (widget.event.ticketTypes.isNotEmpty)
@@ -740,12 +945,13 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(14),
+                    color: isDark ? const Color(0xFF140F1B) : const Color(0xFFFAF7FC),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: q > 0
-                            ? AppColors.primaryGold.withOpacity(0.5)
-                            : AppColors.border),
+                      color: q > 0
+                          ? AppColors.accentGold.withValues(alpha: 0.6)
+                          : cardBorder,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -754,34 +960,54 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name,
-                                style: AppTypography.titleSmall
-                                    .copyWith(fontSize: 14)),
+                            Text(
+                              name,
+                              style: GoogleFonts.cairo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: textPrimary,
+                              ),
+                            ),
                             if (desc != null && desc.isNotEmpty)
-                              Text(desc,
-                                  style: AppTypography.bodySmall.copyWith(
-                                      fontSize: 11,
-                                      color: AppColors.textMuted)),
-                            Text('${t.price.toStringAsFixed(0)} ﷼',
-                                style:
-                                    AppTypography.price.copyWith(fontSize: 13)),
+                              Text(
+                                desc,
+                                style: GoogleFonts.cairo(
+                                  fontSize: 11,
+                                  color: textSub,
+                                ),
+                              ),
+                            Text(
+                              '${t.price.toStringAsFixed(0)} ﷼',
+                              style: GoogleFonts.cairo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.accentGold,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: AppColors.primaryGold, size: 22),
+                            icon: const Icon(Icons.remove_circle_outline_rounded,
+                                color: AppColors.primaryMauve, size: 22),
                             onPressed: q > 0
                                 ? () => setState(
                                     () => _ticketQuantities[t.name] = q - 1)
                                 : null,
                           ),
-                          Text('$q', style: AppTypography.titleMedium),
+                          Text(
+                            '$q',
+                            style: GoogleFonts.cairo(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline,
-                                color: AppColors.primaryGold, size: 22),
+                            icon: const Icon(Icons.add_circle_outline_rounded,
+                                color: AppColors.primaryMauve, size: 22),
                             onPressed: q < t.max
                                 ? () => setState(
                                     () => _ticketQuantities[t.name] = q + 1)
@@ -798,31 +1024,43 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  color: isDark ? const Color(0xFF140F1B) : const Color(0xFFFAF7FC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: cardBorder),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(isAr ? 'عدد التذاكر' : 'Tickets',
-                        style: AppTypography.titleSmall),
+                    Text(
+                      isAr ? 'عدد التذاكر' : 'Tickets',
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textPrimary,
+                      ),
+                    ),
                     Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_circle_outline,
-                              color: AppColors.primaryGold),
+                          icon: const Icon(Icons.remove_circle_outline_rounded,
+                              color: AppColors.primaryMauve),
                           onPressed: (_ticketQuantities['default'] ?? 1) > 1
                               ? () => setState(() =>
                                   _ticketQuantities['default'] =
                                       (_ticketQuantities['default'] ?? 1) - 1)
                               : null,
                         ),
-                        Text('${_ticketQuantities['default'] ?? 1}',
-                            style: AppTypography.titleMedium),
+                        Text(
+                          '${_ticketQuantities['default'] ?? 1}',
+                          style: GoogleFonts.cairo(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline,
-                              color: AppColors.primaryGold),
+                          icon: const Icon(Icons.add_circle_outline_rounded,
+                              color: AppColors.primaryMauve),
                           onPressed: () => setState(() =>
                               _ticketQuantities['default'] =
                                   (_ticketQuantities['default'] ?? 1) + 1),
@@ -836,44 +1074,61 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
             // Extra Services
             if (widget.event.extraPrices.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(isAr ? 'خدمات إضافية اختيارية' : 'Optional Extra Services',
-                  style: AppTypography.titleSmall),
+              Text(
+                isAr ? 'خدمات إضافية اختيارية' : 'Optional Extra Services',
+                style: GoogleFonts.cairo(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                ),
+              ),
               const SizedBox(height: 10),
               ...widget.event.extraPrices.map((extra) {
                 final isSelected = _selectedExtras.contains(extra.name);
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Material(
-                    color: AppColors.card,
+                    color: isDark ? const Color(0xFF140F1B) : const Color(0xFFFAF7FC),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
-                          color: isSelected
-                              ? AppColors.primaryGold
-                              : AppColors.border),
+                        color: isSelected ? AppColors.accentGold : cardBorder,
+                      ),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: CheckboxListTile(
-                    activeColor: AppColors.primaryGold,
-                    checkColor: AppColors.textDark,
-                    title: Text(extra.getDisplayName(isAr),
-                        style: AppTypography.titleSmall.copyWith(fontSize: 14)),
-                    subtitle: Text('+ ${extra.price.toStringAsFixed(0)} ﷼',
-                        style: AppTypography.price.copyWith(fontSize: 12)),
-                    value: isSelected,
-                    onChanged: (val) {
-                      setState(() {
-                        if (val == true) {
-                          _selectedExtras.add(extra.name);
-                        } else {
-                          _selectedExtras.remove(extra.name);
-                        }
-                      });
-                    },
+                      activeColor: AppColors.accentGold,
+                      checkColor: Colors.black,
+                      title: Text(
+                        extra.getDisplayName(isAr),
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '+ ${extra.price.toStringAsFixed(0)} ﷼',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                      value: isSelected,
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedExtras.add(extra.name);
+                          } else {
+                            _selectedExtras.remove(extra.name);
+                          }
+                        });
+                      },
+                    ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
             ],
 
             const SizedBox(height: 24),
@@ -885,57 +1140,82 @@ class _EventBookingBottomSheetState extends State<_EventBookingBottomSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(isAr ? 'المجموع الإجمالي' : 'Total Amount',
-                        style: AppTypography.bodySmall),
-                    Text('${total.toStringAsFixed(0)} ﷼',
-                        style: AppTypography.price.copyWith(fontSize: 22)),
+                    Text(
+                      isAr ? 'المجموع الإجمالي' : 'Total Amount',
+                      style: GoogleFonts.cairo(fontSize: 11, color: textSub),
+                    ),
+                    Text(
+                      '${total.toStringAsFixed(0)} ﷼',
+                      style: GoogleFonts.cairo(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accentGold,
+                      ),
+                    ),
                   ],
                 ),
-                CustomButton(
-                  text: isAr ? 'متابعة للدفع والتأكيد' : 'Proceed to Checkout',
-                  width: 190,
-                  onPressed: () {
-                    final personItems = <BookingPersonItem>[];
-                    if (widget.event.ticketTypes.isNotEmpty) {
-                      for (var t in widget.event.ticketTypes) {
-                        final q = _ticketQuantities[t.name] ?? 0;
-                        if (q > 0) {
-                          personItems.add(BookingPersonItem(
-                            name: t.getDisplayName(isAr),
-                            price: t.price,
-                            quantity: q,
-                          ));
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryMauve,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    onPressed: () {
+                      final personItems = <BookingPersonItem>[];
+                      if (widget.event.ticketTypes.isNotEmpty) {
+                        for (var t in widget.event.ticketTypes) {
+                          final q = _ticketQuantities[t.name] ?? 0;
+                          if (q > 0) {
+                            personItems.add(BookingPersonItem(
+                              name: t.getDisplayName(isAr),
+                              price: t.price,
+                              quantity: q,
+                            ));
+                          }
                         }
+                      } else {
+                        personItems.add(BookingPersonItem(
+                          name: isAr ? 'تذكرة فعالية' : 'Event Ticket',
+                          price: widget.event.priceNum,
+                          quantity: _ticketQuantities['default'] ?? 1,
+                        ));
                       }
-                    } else {
-                      personItems.add(BookingPersonItem(
-                        name: isAr ? 'تذكرة فعالية' : 'Event Ticket',
-                        price: widget.event.priceNum,
-                        quantity: _ticketQuantities['default'] ?? 1,
-                      ));
-                    }
 
-                    final extraItems = widget.event.extraPrices
-                        .where((e) => _selectedExtras.contains(e.name))
-                        .map((e) => BookingExtraItem(
-                            name: e.getDisplayName(isAr), price: e.price))
-                        .toList();
+                      final extraItems = widget.event.extraPrices
+                          .where((e) => _selectedExtras.contains(e.name))
+                          .map((e) => BookingExtraItem(
+                              name: e.getDisplayName(isAr), price: e.price))
+                          .toList();
 
-                    final draft = BookingDraft(
-                      title: widget.event.title,
-                      imageUrl: widget.event.imageUrl,
-                      location: widget.event.location,
-                      date: _selectedDate,
-                      serviceType: 'event',
-                      serviceId: int.tryParse(widget.event.id.toString()) ?? 1,
-                      personItems: personItems,
-                      extraItems: extraItems,
-                      totalAmount: total,
-                    );
+                      final draft = BookingDraft(
+                        title: widget.event.title,
+                        imageUrl: widget.event.imageUrl,
+                        location: widget.event.location,
+                        date: _selectedDate,
+                        serviceType: 'event',
+                        serviceId: int.tryParse(widget.event.id.toString()) ?? 1,
+                        personItems: personItems,
+                        extraItems: extraItems,
+                        totalAmount: total,
+                      );
 
-                    Navigator.pop(context);
-                    context.push('/checkout/${widget.event.id}', extra: draft);
-                  },
+                      Navigator.pop(context);
+                      context.push('/checkout/${widget.event.id}', extra: draft);
+                    },
+                    child: Text(
+                      isAr ? 'متابعة للدفع والتأكيد' : 'Proceed to Checkout',
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

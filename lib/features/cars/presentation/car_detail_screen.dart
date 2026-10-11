@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_typography.dart';
 import '../../../core/localization/locale_provider.dart';
 import '../../../core/utils/share_helper.dart';
-import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/image_viewer_dialog.dart';
 import '../../booking/data/booking_draft.dart';
 import '../data/car_repository.dart';
@@ -25,10 +24,11 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
   int _selectedImageIndex = 0;
 
   void _openBookingSheet(BuildContext context, CarModel car) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -42,11 +42,23 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
     final isAr = currentLocale.languageCode == 'ar';
     final carAsync = ref.watch(carDetailProvider(widget.carId));
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Scaffold(
+      backgroundColor: bg,
       body: carAsync.when(
         data: (car) {
           final images = car.gallery.isNotEmpty ? car.gallery : [car.imageUrl];
-          final currentImage = _selectedImageIndex < images.length ? images[_selectedImageIndex] : car.imageUrl;
+          final currentImage = _selectedImageIndex < images.length
+              ? images[_selectedImageIndex]
+              : car.imageUrl;
 
           return Stack(
             children: [
@@ -55,50 +67,76 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                   SliverAppBar(
                     expandedHeight: 320,
                     pinned: true,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: bg,
                     leading: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: CircleAvatar(
-                        backgroundColor: Colors.black.withOpacity(0.55),
+                        backgroundColor: Colors.black.withValues(alpha: 0.55),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
                           onPressed: () => context.pop(),
                         ),
                       ),
                     ),
                     actions: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
                             icon: Icon(
-                              ref.watch(wishlistProvider).isFavorite(widget.carId, 'car')
+                              ref
+                                      .watch(wishlistProvider)
+                                      .isFavorite(widget.carId, 'car')
                                   ? Icons.favorite
                                   : Icons.favorite_border,
-                              color: ref.watch(wishlistProvider).isFavorite(widget.carId, 'car')
+                              color: ref
+                                      .watch(wishlistProvider)
+                                      .isFavorite(widget.carId, 'car')
                                   ? AppColors.error
-                                  : AppColors.primaryGold,
+                                  : AppColors.accentGold,
                             ),
                             onPressed: () async {
-                              final added = await ref.read(wishlistProvider.notifier).toggleFavorite(
-                                WishlistItemModel(
-                                  id: int.tryParse(widget.carId.toString()) ?? 0,
-                                  objectId: int.tryParse(widget.carId.toString()) ?? 0,
-                                  objectModel: 'car',
-                                  title: car.title,
-                                  imageUrl: car.imageUrl,
-                                  price: car.price,
-                                  location: car.locationName,
-                                ),
-                              );
+                              final added = await ref
+                                  .read(wishlistProvider.notifier)
+                                  .toggleFavorite(
+                                    WishlistItemModel(
+                                      id: int.tryParse(
+                                              widget.carId.toString()) ??
+                                          0,
+                                      objectId: int.tryParse(
+                                              widget.carId.toString()) ??
+                                          0,
+                                      objectModel: 'car',
+                                      title: car.title,
+                                      imageUrl: car.imageUrl,
+                                      price: car.price,
+                                      location: car.locationName,
+                                    ),
+                                  );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(added
-                                        ? (isAr ? 'تمت إضافة السيارة إلى المفضلة ❤️' : 'Added car to favorites ❤️')
-                                        : (isAr ? 'تمت إزالة السيارة من المفضلة' : 'Removed from favorites')),
-                                    backgroundColor: added ? AppColors.primaryGold : AppColors.card,
+                                    content: Text(
+                                      added
+                                          ? (isAr
+                                              ? 'تمت إضافة السيارة إلى المفضلة ❤️'
+                                              : 'Added car to favorites ❤️')
+                                          : (isAr
+                                              ? 'تمت إزالة السيارة من المفضلة'
+                                              : 'Removed from favorites'),
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    backgroundColor: added
+                                        ? AppColors.accentGold
+                                        : (isDark
+                                            ? AppColors.darkCard
+                                            : const Color(0xFF333333)),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -108,15 +146,19 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
-                            icon: const Icon(Icons.share_outlined, color: Colors.white),
+                            icon: const Icon(Icons.share_outlined,
+                                color: Colors.white, size: 20),
                             onPressed: () => ShareHelper.shareItem(
                               context: context,
                               title: car.title,
-                              category: 'تأجير سيارات فارهة',
+                              category: isAr
+                                  ? 'تأجير سيارات فارهة'
+                                  : 'Luxury Car Rental',
                               id: widget.carId.toString(),
                               price: '${car.price} ر.س / يوم',
                               location: car.locationName,
@@ -126,11 +168,13 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4.0, vertical: 8.0),
                         child: CircleAvatar(
-                          backgroundColor: Colors.black.withOpacity(0.55),
+                          backgroundColor: Colors.black.withValues(alpha: 0.55),
                           child: IconButton(
-                            icon: const Icon(Icons.fullscreen, color: Colors.white),
+                            icon: const Icon(Icons.fullscreen,
+                                color: Colors.white, size: 20),
                             onPressed: () => ImageViewerDialog.show(
                               context,
                               images: images,
@@ -154,27 +198,50 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                               imageUrl: currentImage,
                               fit: BoxFit.cover,
                               errorWidget: (context, url, error) => Container(
-                                color: AppColors.surface,
-                                child: const Icon(Icons.directions_car, color: AppColors.primaryGold, size: 80),
+                                color: cardBg,
+                                child: Icon(Icons.directions_car,
+                                    color: AppColors.accentGold, size: 80),
+                              ),
+                            ),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.6),
+                                    Colors.transparent,
+                                    bg.withValues(alpha: 0.95),
+                                    bg,
+                                  ],
+                                  stops: const [0.0, 0.4, 0.85, 1.0],
+                                ),
                               ),
                             ),
                             Positioned(
                               bottom: 12,
-                              right: 16,
+                              right: isAr ? 16 : null,
+                              left: isAr ? null : 16,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.65),
+                                  color: Colors.black.withValues(alpha: 0.65),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.photo_library_outlined, size: 14, color: AppColors.primaryGold),
+                                    const Icon(Icons.photo_library_outlined,
+                                        size: 14, color: AppColors.accentGold),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${_selectedImageIndex + 1}/${images.length}',
-                                      style: AppTypography.bodySmall.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                      style: GoogleFonts.cairo(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -200,18 +267,22 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: images.length,
-                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 8),
                                 itemBuilder: (context, idx) {
                                   final isSel = idx == _selectedImageIndex;
                                   return GestureDetector(
-                                    onTap: () => setState(() => _selectedImageIndex = idx),
+                                    onTap: () => setState(
+                                        () => _selectedImageIndex = idx),
                                     child: Container(
                                       width: 80,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: isSel ? AppColors.primaryGold : AppColors.border,
-                                          width: isSel ? 2 : 1,
+                                          color: isSel
+                                              ? AppColors.accentGold
+                                              : Colors.transparent,
+                                          width: 2,
                                         ),
                                       ),
                                       clipBehavior: Clip.antiAlias,
@@ -232,74 +303,186 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: AppColors.goldGlow,
+                                  color:
+                                      AppColors.accentGold.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppColors.primaryGold.withOpacity(0.4)),
+                                  border: Border.all(
+                                    color: AppColors.accentGold
+                                        .withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: Text(
                                   car.category,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: AppColors.primaryGold,
+                                  style: GoogleFonts.cairo(
+                                    color: AppColors.accentGold,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
                               Row(
                                 children: [
-                                  const Icon(Icons.star, color: AppColors.primaryGold, size: 18),
+                                  const Icon(Icons.star,
+                                      color: AppColors.accentGold, size: 18),
                                   const SizedBox(width: 4),
-                                  Text('${car.rating}', style: AppTypography.titleMedium),
+                                  Text(
+                                    '${car.rating}',
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: textPrimary,
+                                    ),
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text('(${car.reviewsCount} تقييم)', style: AppTypography.bodySmall),
+                                  Text(
+                                    isAr
+                                        ? '(${car.reviewsCount} تقييم)'
+                                        : '(${car.reviewsCount} reviews)',
+                                    style: GoogleFonts.cairo(
+                                      fontSize: 12,
+                                      color: textMuted,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
 
-                          Text(car.title, style: AppTypography.headingMedium),
+                          Text(
+                            car.title,
+                            style: GoogleFonts.cairo(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 6),
 
                           Row(
                             children: [
-                              const Icon(Icons.location_on_outlined, size: 16, color: AppColors.primaryGold),
+                              const Icon(Icons.location_on_outlined,
+                                  size: 16, color: AppColors.accentGold),
                               const SizedBox(width: 4),
-                              Text(car.locationName ?? 'المملكة العربية السعودية', style: AppTypography.bodyMedium),
+                              Text(
+                                car.locationName ??
+                                    (isAr
+                                        ? 'المملكة العربية السعودية'
+                                        : 'Saudi Arabia'),
+                                style: GoogleFonts.cairo(
+                                  fontSize: 13,
+                                  color: textMuted,
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),
 
                           // Specs Grid
-                          Text('المواصفات الأساسية', style: AppTypography.titleLarge),
+                          Text(
+                            isAr ? 'المواصفات الأساسية' : 'Key Specifications',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppColors.card,
+                              color: cardBg,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: cardBorder),
                             ),
                             child: Column(
                               children: [
                                 Row(
                                   children: [
-                                    Expanded(child: _buildSpecBox(Icons.people_outline, 'السعة', '${car.passengerCount} ركاب')),
-                                    Container(width: 1, height: 45, color: AppColors.border),
-                                    Expanded(child: _buildSpecBox(Icons.meeting_room_outlined, 'الأبواب', '${car.doors} أبواب')),
-                                    Container(width: 1, height: 45, color: AppColors.border),
-                                    Expanded(child: _buildSpecBox(Icons.luggage_outlined, 'الحقائب', '${car.baggage} حقائب')),
+                                    Expanded(
+                                      child: _buildSpecBox(
+                                        Icons.people_outline,
+                                        isAr ? 'السعة' : 'Capacity',
+                                        isAr
+                                            ? '${car.passengerCount} ركاب'
+                                            : '${car.passengerCount} Seats',
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    ),
+                                    Container(
+                                        width: 1,
+                                        height: 45,
+                                        color: cardBorder),
+                                    Expanded(
+                                      child: _buildSpecBox(
+                                        Icons.meeting_room_outlined,
+                                        isAr ? 'الأبواب' : 'Doors',
+                                        isAr
+                                            ? '${car.doors} أبواب'
+                                            : '${car.doors} Doors',
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    ),
+                                    Container(
+                                        width: 1,
+                                        height: 45,
+                                        color: cardBorder),
+                                    Expanded(
+                                      child: _buildSpecBox(
+                                        Icons.luggage_outlined,
+                                        isAr ? 'الحقائب' : 'Baggage',
+                                        isAr
+                                            ? '${car.baggage} حقائب'
+                                            : '${car.baggage} Bags',
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    ),
                                   ],
                                 ),
-                                const Divider(height: 24, color: AppColors.border),
+                                Divider(height: 24, color: cardBorder),
                                 Row(
                                   children: [
-                                    Expanded(child: _buildSpecBox(Icons.settings_outlined, 'ناقل الحركة', car.transmission)),
-                                    Container(width: 1, height: 45, color: AppColors.border),
-                                    Expanded(child: _buildSpecBox(Icons.local_gas_station_outlined, 'الوقود', 'بنزين 95')),
-                                    Container(width: 1, height: 45, color: AppColors.border),
-                                    Expanded(child: _buildSpecBox(Icons.ac_unit_outlined, 'التكييف', 'مركزي حديث')),
+                                    Expanded(
+                                      child: _buildSpecBox(
+                                        Icons.settings_outlined,
+                                        isAr ? 'ناقل الحركة' : 'Transmission',
+                                        car.transmission,
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    ),
+                                    Container(
+                                        width: 1,
+                                        height: 45,
+                                        color: cardBorder),
+                                    Expanded(
+                                      child: _buildSpecBox(
+                                        Icons.local_gas_station_outlined,
+                                        isAr ? 'الوقود' : 'Fuel',
+                                        isAr ? 'بنزين 95' : 'Petrol 95',
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    ),
+                                    Container(
+                                        width: 1,
+                                        height: 45,
+                                        color: cardBorder),
+                                    Expanded(
+                                      child: _buildSpecBox(
+                                        Icons.ac_unit_outlined,
+                                        isAr ? 'التكييف' : 'A/C',
+                                        isAr ? 'مركزي حديث' : 'Climate Control',
+                                        textPrimary,
+                                        textMuted,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -308,26 +491,76 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                           const SizedBox(height: 24),
 
                           // Description
-                          Text('نبذة عن السيارة', style: AppTypography.titleLarge),
+                          Text(
+                            isAr ? 'نبذة عن السيارة' : 'About Vehicle',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Text(
                             car.description,
-                            style: AppTypography.bodyMedium.copyWith(height: 1.6),
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              height: 1.7,
+                              color: textMuted,
+                            ),
                           ),
                           const SizedBox(height: 24),
 
                           // Features & Inclusions
-                          Text('المميزات والخدمات المشمولة', style: AppTypography.titleLarge),
+                          Text(
+                            isAr
+                                ? 'المميزات والخدمات المشمولة'
+                                : 'Features & Included Services',
+                            style: GoogleFonts.cairo(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          _buildFeatureRow(Icons.verified_outlined, 'تأمين شامل ضد الحوادث والمسؤولية'),
+                          _buildFeatureRow(
+                            Icons.verified_outlined,
+                            isAr
+                                ? 'تأمين شامل ضد الحوادث والمسؤولية'
+                                : 'Comprehensive insurance included',
+                            textPrimary,
+                          ),
                           const SizedBox(height: 10),
-                          _buildFeatureRow(Icons.gps_fixed, 'نظام ملاحة وخرائط ذكي ومحدث'),
+                          _buildFeatureRow(
+                            Icons.gps_fixed,
+                            isAr
+                                ? 'نظام ملاحة وخرائط ذكي ومحدث'
+                                : 'Smart updated GPS navigation system',
+                            textPrimary,
+                          ),
                           const SizedBox(height: 10),
-                          _buildFeatureRow(Icons.clean_hands_outlined, 'استلام وتسليم معقم بالكامل مع باقة ضيافة'),
+                          _buildFeatureRow(
+                            Icons.clean_hands_outlined,
+                            isAr
+                                ? 'استلام وتسليم معقم بالكامل مع باقة ضيافة'
+                                : 'Fully sanitized delivery with hospitality pack',
+                            textPrimary,
+                          ),
                           const SizedBox(height: 10),
-                          _buildFeatureRow(Icons.support_agent_outlined, 'دعم ومساعدة على الطريق على مدار 24 ساعة'),
+                          _buildFeatureRow(
+                            Icons.support_agent_outlined,
+                            isAr
+                                ? 'دعم ومساعدة على الطريق على مدار 24 ساعة'
+                                : '24/7 roadside assistance support',
+                            textPrimary,
+                          ),
                           const SizedBox(height: 10),
-                          _buildFeatureRow(Icons.person_pin, 'خيار إضافة سائق خاص محترف مرخص'),
+                          _buildFeatureRow(
+                            Icons.person_pin,
+                            isAr
+                                ? 'خيار إضافة سائق خاص محترف مرخص'
+                                : 'Optional licensed private chauffeur service',
+                            textPrimary,
+                          ),
 
                           if (car.features.isNotEmpty) ...[
                             const SizedBox(height: 16),
@@ -336,18 +569,27 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                               runSpacing: 8,
                               children: car.features.map((f) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: AppColors.surface,
+                                    color: cardBg,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: AppColors.border),
+                                    border: Border.all(color: cardBorder),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.check, size: 14, color: AppColors.primaryGold),
+                                      const Icon(Icons.check,
+                                          size: 14,
+                                          color: AppColors.accentGold),
                                       const SizedBox(width: 6),
-                                      Text(f.title, style: AppTypography.bodySmall),
+                                      Text(
+                                        f.title,
+                                        style: GoogleFonts.cairo(
+                                          fontSize: 12,
+                                          color: textPrimary,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
@@ -368,10 +610,18 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.border)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    border: Border(top: BorderSide(color: cardBorder)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
                   child: SafeArea(
                     child: Row(
@@ -380,15 +630,46 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('سعر الإيجار اليومي', style: AppTypography.bodySmall),
-                            Text(car.pricePerDay, style: AppTypography.price),
+                            Text(
+                              isAr ? 'سعر الإيجار اليومي' : 'Daily Rental Rate',
+                              style: GoogleFonts.cairo(
+                                fontSize: 11,
+                                color: textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              car.pricePerDay,
+                              style: GoogleFonts.cairo(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.accentGold,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(width: 20),
                         Expanded(
-                          child: CustomButton(
-                            text: 'حجز واستئجار السيارة',
+                          child: ElevatedButton(
                             onPressed: () => _openBookingSheet(context, car),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryMauve,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: Text(
+                              isAr
+                                  ? 'حجز واستئجار السيارة'
+                                  : 'Book & Rent Vehicle',
+                              style: GoogleFonts.cairo(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -399,22 +680,51 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
             ],
           );
         },
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator(color: AppColors.primaryGold)),
+        loading: () => Scaffold(
+          backgroundColor: bg,
+          body: const Center(
+              child: CircularProgressIndicator(color: AppColors.accentGold)),
         ),
         error: (err, _) => Scaffold(
-          appBar: AppBar(title: const Text('تفاصيل السيارة')),
+          backgroundColor: bg,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            title: Text(
+              isAr ? 'تفاصيل السيارة' : 'Car Details',
+              style: GoogleFonts.cairo(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary),
+            ),
+          ),
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                const Icon(Icons.error_outline,
+                    size: 48, color: AppColors.error),
                 const SizedBox(height: 12),
-                Text('تعذر تحميل تفاصيل السيارة', style: AppTypography.titleLarge),
+                Text(
+                  isAr
+                      ? 'تعذر تحميل تفاصيل السيارة'
+                      : 'Failed to load car details',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => ref.refresh(carDetailProvider(widget.carId)),
-                  child: const Text('إعادة المحاولة'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryMauve,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(
+                    isAr ? 'إعادة المحاولة' : 'Retry',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -424,24 +734,42 @@ class _CarDetailScreenState extends ConsumerState<CarDetailScreen> {
     );
   }
 
-  Widget _buildSpecBox(IconData icon, String title, String value) {
+  Widget _buildSpecBox(IconData icon, String title, String value,
+      Color textPrimary, Color textMuted) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.primaryGold, size: 22),
+        Icon(icon, color: AppColors.accentGold, size: 22),
         const SizedBox(height: 4),
-        Text(title, style: AppTypography.bodySmall.copyWith(fontSize: 11)),
+        Text(
+          title,
+          style: GoogleFonts.cairo(fontSize: 11, color: textMuted),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: AppTypography.titleSmall.copyWith(fontSize: 12), textAlign: TextAlign.center),
+        Text(
+          value,
+          style: GoogleFonts.cairo(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
 
-  Widget _buildFeatureRow(IconData icon, String text) {
+  Widget _buildFeatureRow(IconData icon, String text, Color textPrimary) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.primaryGold, size: 18),
+        const Icon(Icons.check_circle_outline,
+            color: AppColors.accentGold, size: 18),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: AppTypography.bodyMedium)),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.cairo(fontSize: 13, color: textPrimary),
+          ),
+        ),
       ],
     );
   }
@@ -468,7 +796,9 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
   }
 
   double get _baseDailyRate {
-    return widget.car.salePrice != null && widget.car.salePrice! > 0 ? widget.car.salePrice! : widget.car.price;
+    return widget.car.salePrice != null && widget.car.salePrice! > 0
+        ? widget.car.salePrice!
+        : widget.car.price;
   }
 
   double get _driverDailyRate => 200.0;
@@ -478,12 +808,30 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
     return daily * _daysCount;
   }
 
-  Future<void> _selectStartDate() async {
+  Future<void> _selectStartDate(bool isDark, Color textPrimary) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme(
+              brightness: isDark ? Brightness.dark : Brightness.light,
+              primary: AppColors.primaryMauve,
+              onPrimary: Colors.white,
+              secondary: AppColors.accentGold,
+              onSecondary: Colors.black,
+              surface: isDark ? AppColors.darkCard : Colors.white,
+              onSurface: textPrimary,
+              error: AppColors.error,
+              onError: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
@@ -495,12 +843,32 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
     }
   }
 
-  Future<void> _selectEndDate() async {
+  Future<void> _selectEndDate(bool isDark, Color textPrimary) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _endDate.isAfter(_startDate) ? _endDate : _startDate.add(const Duration(days: 1)),
+      initialDate: _endDate.isAfter(_startDate)
+          ? _endDate
+          : _startDate.add(const Duration(days: 1)),
       firstDate: _startDate.add(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme(
+              brightness: isDark ? Brightness.dark : Brightness.light,
+              primary: AppColors.primaryMauve,
+              onPrimary: Colors.white,
+              secondary: AppColors.accentGold,
+              onSecondary: Colors.black,
+              surface: isDark ? AppColors.darkCard : Colors.white,
+              onSurface: textPrimary,
+              error: AppColors.error,
+              onError: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() => _endDate = picked);
@@ -519,11 +887,18 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
       date: _startDate,
       unitPrice: _baseDailyRate,
       personItems: [
-        BookingPersonItem(name: 'أيام الاستئجار ($_daysCount أيام)', price: _baseDailyRate, quantity: _daysCount),
+        BookingPersonItem(
+          name: 'أيام الاستئجار ($_daysCount أيام)',
+          price: _baseDailyRate,
+          quantity: _daysCount,
+        ),
       ],
       extraItems: [
         if (_includeDriver)
-          BookingExtraItem(name: 'سائق خاص محترف ($_daysCount أيام)', price: _driverDailyRate * _daysCount),
+          BookingExtraItem(
+            name: 'سائق خاص محترف ($_daysCount أيام)',
+            price: _driverDailyRate * _daysCount,
+          ),
       ],
       totalAmount: _totalPrice,
     );
@@ -533,6 +908,14 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final cardBorder = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final textMuted =
+        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -545,45 +928,82 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Handle bar & Close button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('تحديد تفاصيل استئجار السيارة', style: AppTypography.headingSmall),
+                Text(
+                  'تحديد تفاصيل استئجار السيارة',
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                  icon: Icon(Icons.close, color: textMuted),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-            const Divider(color: AppColors.border),
+            Divider(color: cardBorder),
             const SizedBox(height: 12),
 
             // Date Range Selection
-            Text('مدة الاستئجار', style: AppTypography.titleSmall),
+            Text(
+              'مدة الاستئجار',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: _selectStartDate,
+                    onTap: () => _selectStartDate(isDark, textPrimary),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.card,
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: cardBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('تاريخ الاستلام', style: AppTypography.bodySmall),
+                          Text(
+                            'تاريخ الاستلام',
+                            style: GoogleFonts.cairo(
+                                fontSize: 11, color: textMuted),
+                          ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.calendar_today, size: 16, color: AppColors.primaryGold),
+                              const Icon(Icons.calendar_today,
+                                  size: 16, color: AppColors.accentGold),
                               const SizedBox(width: 6),
-                              Text('${_startDate.day}/${_startDate.month}/${_startDate.year}', style: AppTypography.titleSmall),
+                              Text(
+                                '${_startDate.day}/${_startDate.month}/${_startDate.year}',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -594,24 +1014,36 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
-                    onTap: _selectEndDate,
+                    onTap: () => _selectEndDate(isDark, textPrimary),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.card,
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: cardBorder),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('تاريخ التسليم', style: AppTypography.bodySmall),
+                          Text(
+                            'تاريخ التسليم',
+                            style: GoogleFonts.cairo(
+                                fontSize: 11, color: textMuted),
+                          ),
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.calendar_month, size: 16, color: AppColors.primaryGold),
+                              const Icon(Icons.calendar_month,
+                                  size: 16, color: AppColors.accentGold),
                               const SizedBox(width: 6),
-                              Text('${_endDate.day}/${_endDate.month}/${_endDate.year}', style: AppTypography.titleSmall),
+                              Text(
+                                '${_endDate.day}/${_endDate.month}/${_endDate.year}',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: textPrimary,
+                                ),
+                              ),
                             ],
                           ),
                         ],
@@ -621,41 +1053,65 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.goldGlow,
+                  color: AppColors.accentGold.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('المدة الإجمالية: $_daysCount أيام', style: AppTypography.bodySmall.copyWith(color: AppColors.primaryGold, fontWeight: FontWeight.bold)),
+                child: Text(
+                  'المدة الإجمالية: $_daysCount أيام',
+                  style: GoogleFonts.cairo(
+                    color: AppColors.accentGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
 
             // Pick-up location
-            Text('موقع الاستلام والتسليم', style: AppTypography.titleSmall),
+            Text(
+              'موقع الاستلام والتسليم',
+              style: GoogleFonts.cairo(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: textPrimary,
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: cardBorder),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _pickupLocation,
                   isExpanded: true,
-                  dropdownColor: AppColors.card,
+                  dropdownColor: isDark ? AppColors.darkCard : Colors.white,
                   items: [
                     'مطار الملك خالد الدولي (الرياض)',
                     'مطار الملك عبدالعزيز الدولي (جدة)',
                     'مطار الأمير محمد بن عبدالعزيز (المدينة)',
                     'مطار العلا الدولي',
                     'التسليم عند مقر إقامة العميل (الفندق)',
-                  ].map((loc) => DropdownMenuItem(value: loc, child: Text(loc, style: AppTypography.bodyMedium))).toList(),
+                  ]
+                      .map((loc) => DropdownMenuItem(
+                            value: loc,
+                            child: Text(
+                              loc,
+                              style: GoogleFonts.cairo(
+                                  fontSize: 13, color: textPrimary),
+                            ),
+                          ))
+                      .toList(),
                   onChanged: (val) {
                     if (val != null) setState(() => _pickupLocation = val);
                   },
@@ -668,26 +1124,40 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: cardBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: cardBorder),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.person_pin, color: AppColors.primaryGold, size: 24),
+                  const Icon(Icons.person_pin,
+                      color: AppColors.accentGold, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('طلب سائق خاص محترف', style: AppTypography.titleSmall),
-                        Text('خدمة سائق مرافق مع السيارة (+200 ﷼/يوم)', style: AppTypography.bodySmall),
+                        Text(
+                          'طلب سائق خاص محترف',
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'خدمة سائق مرافق مع السيارة (+200 ﷼/يوم)',
+                          style: GoogleFonts.cairo(
+                            fontSize: 11,
+                            color: textMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   Switch(
                     value: _includeDriver,
-                    activeColor: AppColors.primaryGold,
+                    activeThumbColor: AppColors.accentGold,
                     onChanged: (val) => setState(() => _includeDriver = val),
                   ),
                 ],
@@ -699,17 +1169,30 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: isDark
+                    ? const Color(0xFF130F1A)
+                    : const Color(0xFFF7F5F9),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: cardBorder),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('سعر الإيجار الأساسي ($_daysCount أيام):', style: AppTypography.bodySmall),
-                      Text('${(_baseDailyRate * _daysCount).toStringAsFixed(0)} ﷼', style: AppTypography.titleSmall),
+                      Text(
+                        'سعر الإيجار الأساسي ($_daysCount أيام):',
+                        style:
+                            GoogleFonts.cairo(fontSize: 12, color: textMuted),
+                      ),
+                      Text(
+                        '${(_baseDailyRate * _daysCount).toStringAsFixed(0)} ﷼',
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                      ),
                     ],
                   ),
                   if (_includeDriver) ...[
@@ -717,17 +1200,42 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('خدمة السائق الخاص ($_daysCount أيام):', style: AppTypography.bodySmall),
-                        Text('${(_driverDailyRate * _daysCount).toStringAsFixed(0)} ﷼', style: AppTypography.titleSmall),
+                        Text(
+                          'خدمة السائق الخاص ($_daysCount أيام):',
+                          style: GoogleFonts.cairo(
+                              fontSize: 12, color: textMuted),
+                        ),
+                        Text(
+                          '${(_driverDailyRate * _daysCount).toStringAsFixed(0)} ﷼',
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
+                          ),
+                        ),
                       ],
                     ),
                   ],
-                  const Divider(height: 16, color: AppColors.border),
+                  Divider(height: 16, color: cardBorder),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('الإجمالي المستحق:', style: AppTypography.titleMedium),
-                      Text('${_totalPrice.toStringAsFixed(0)} ﷼', style: AppTypography.price),
+                      Text(
+                        'الإجمالي المستحق:',
+                        style: GoogleFonts.cairo(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '${_totalPrice.toStringAsFixed(0)} ﷼',
+                        style: GoogleFonts.cairo(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentGold,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -736,9 +1244,27 @@ class _CarBookingBottomSheetState extends State<_CarBookingBottomSheet> {
             const SizedBox(height: 20),
 
             // Proceed Button
-            CustomButton(
-              text: 'متابعة إلى إتمام الحجز والدفع',
-              onPressed: _proceedToCheckout,
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _proceedToCheckout,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryMauve,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  'متابعة إلى إتمام الحجز والدفع',
+                  style: GoogleFonts.cairo(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

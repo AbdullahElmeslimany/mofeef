@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_response_handler.dart';
 
 class WishlistItemModel {
   final int id;
@@ -81,8 +82,7 @@ class WishlistRepositoryImpl implements WishlistRepository {
     List<WishlistItemModel> remoteItems = [];
     try {
       final response = await _dio.get(ApiEndpoints.wishlist);
-      final data = response.data;
-      final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
+      final list = ApiResponseHandler.extractList(response.data);
       remoteItems = list.map((e) => WishlistItemModel.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {}
 

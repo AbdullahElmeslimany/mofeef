@@ -1,0 +1,4434 @@
+{
+  "info": {
+    "_postman_id": "1c08f733-6b6d-41b3-a80f-42c46410c167",
+    "name": "Modeefe Mobile API — User",
+    "description": "API collection for the Modeefe mobile app.\n\n**Scope: end-user (customer) only.** This app has no vendor, admin, or guide-account surface — every endpoint here is meant for a plain registered customer. `POST /auth/register` already hardcodes new accounts to the `user_role` setting (customer) server-side regardless of what the client sends, so there is no way to self-register as anything else through this API. `POST /auth/login` now also actively rejects vendor/guide/admin accounts with a clear error, so this API can't be reached as anything but a customer. (The Guide folder below is the one exception to \"no guide surface\" — it lets a customer *browse* guide profiles, same as Tour lets them browse tours; it has nothing to do with a guide managing their own account.)\n\n**Booking requires registration + verification too.** Both Login and every write action under the Booking folder (Add to Cart, Add Enquiry, Checkout) reject unverified accounts with an `email_not_verified` error, so a user must be registered, logged in, and have clicked their email verification link before they can book a tour.\n\n**Folders:** Auth (register, login, profile, password), Wishlist, Booking History, Tour (search/filters/detail/availability/reviews), Guide (search/filters/detail — browsing only), Car (search/filters/detail/availability/reviews), Event (search/filters/detail/availability/reviews), Shop (search/filters/detail/reviews), Booking (add to cart, enquiry, single-item checkout, status), Cart & Checkout (view cart, coupon, unified multi-item checkout, receipt, order history). Tickets/QR and profile deletion aren't included yet.\n\nAll requests are relative to the `base_url` collection variable. After a successful Login, the response's `access_token` is captured automatically into the `access_token` collection variable so subsequent authenticated requests (e.g. `Me`, `Logout`) can reuse it via the collection's Bearer Token auth.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "31255420",
+    "_collection_link": "https://go.postman.co/collection/31255420-1c08f733-6b6d-41b3-a80f-42c46410c167?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"admin\",\n    \"last_name\": \"meem\",\n    \"email\": \"admin@meemtech.com\",\n    \"password\": \"123456789\",\n    \"phone\": \"+966500000000\",\n    \"term\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates a new customer account.\n\n**Required:** `first_name`, `last_name`, `email` (unique), `password`, `term`.\n**Optional:** `phone`.\n\nThe new user is always assigned the `user_role` setting's role (plain customer) server-side — the request body has no field that can influence this, so registering as a vendor/guide/admin isn't possible through this endpoint.\n\nGated by the `is_enable_registration()` site setting — if registration is disabled, this always returns the \"You are not allowed to register\" error regardless of input."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Register successfully\",\n    \"status\": true\n}"
+            },
+            {
+              "name": "200 — Validation error (e.g. email already taken)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": {\n        \"email\": [\n            \"The email has already been taken.\"\n        ]\n    }\n}"
+            },
+            {
+              "name": "200 — Registration disabled",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"You are not allowed to register\",\n    \"status\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Auto-capture the token so every other request in this collection",
+                  "// (Bearer auth set at the collection level) can reuse it immediately.",
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.collectionVariables.set('access_token', json.access_token);",
+                  "        pm.test('access_token captured', function () {",
+                  "            pm.expect(json.access_token).to.be.a('string');",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"{{device_name}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates a user and issues a Sanctum personal access token.\n\n**Required:** `email`, `password`, `device_name` (used as the token's name — Sanctum lets a user hold one token per device, e.g. \"iphone-14-abc123\").\n\nOnly plain customer accounts (role matches the `user_role` setting, and not a guide) can obtain a token here — vendor/guide/admin accounts get a clear \"account type isn't supported\" error instead. The role check runs strictly after the password check, so a wrong password looks identical regardless of account type (no account-type enumeration via this endpoint).\n\nAlso requires a verified email, matching the website's own `middleware(['auth','verified'])` on the whole `/user/*` area — an unverified account can't get a token here either, so it can't reach full profile/wishlist/booking access through the mobile app while the website itself still has it walled off behind `/email/verify`."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"access_token\": \"1|abcdEFGH1234567890tokenExampleString\",\n    \"user\": {\n        \"id\": 101,\n        \"first_name\": \"John\",\n        \"last_name\": \"Doe\",\n        \"email\": \"john.doe@example.com\",\n        \"avatar_url\": null,\n        \"display_name\": \"John Doe\"\n    },\n    \"status\": 1\n}"
+            },
+            {
+              "name": "200 — Invalid credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"invalid_credentials\",\n    \"status\": 0,\n    \"message\": \"Password is not correct\"\n}"
+            },
+            {
+              "name": "200 — Validation error (missing field)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"errors\": {\n        \"device_name\": [\n            \"The device name field is required.\"\n        ]\n    },\n    \"status\": 0\n}"
+            },
+            {
+              "name": "200 — Account type not allowed (vendor/guide/admin)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"account_not_allowed\",\n    \"status\": 0,\n    \"message\": \"This account type isn't supported on this app.\"\n}"
+            },
+            {
+              "name": "200 — Email not verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"email_not_verified\",\n    \"status\": 0,\n    \"message\": \"Please verify your email address before logging in.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Me (Get Profile)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the authenticated user's profile. Requires the Bearer token from Login (inherited from the collection's auth settings).\n\nAdds `avatar_url`/`avatar_thumb_url` to the response only when the user has an `avatar_id` set."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 101,\n        \"first_name\": \"John\",\n        \"last_name\": \"Doe\",\n        \"email\": \"john.doe@example.com\",\n        \"phone\": \"+966500000000\",\n        \"avatar_id\": null,\n        \"role_id\": 3\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+966500000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Updates the authenticated user's profile.\n\n**Required:** `first_name`, `last_name`, `email` (must stay unique).\n**Also accepted:** any other fillable User field (e.g. `phone`, `address`, `birthday`, `gender`, `bio`), since the controller mass-assigns the whole request body.\n\n⚠️ Caveat found while documenting this: the controller unconditionally does `date('Y-m-d', strtotime($user->birthday))` after filling, even when `birthday` isn't in the request at all. If the account has no birthday set yet, `strtotime('')` returns `false`, and this silently writes `1970-01-01` into `birthday` on *any* profile update, not just ones that intended to change it. Not fixed here since it's outside what was asked — flagging it for a follow-up."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Update successfully\",\n    \"status\": true\n}"
+            },
+            {
+              "name": "200 — Validation error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": {\n        \"email\": [\n            \"The email has already been taken.\"\n        ]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"current_password\": \"password123\",\n    \"new_password\": \"newPassword456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/change-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Changes the authenticated user's password.\n\n**Required:** `current_password`, `new_password` (min 6 characters).\n\nAll of the user's existing Sanctum tokens are revoked on success (including the one used for this request) — the client must log in again afterward, which is exactly what the `need_relogin` code in the response is signaling."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Password updated. Please re-login\",\n    \"code\": \"need_relogin\",\n    \"status\": 1\n}"
+            },
+            {
+              "name": "200 — Current password incorrect",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"invalid_current_password\",\n    \"status\": 0,\n    \"message\": \"Current password is not correct\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revokes only the current access token (the one used to authenticate this request), not every token the user holds — unlike Change Password, other devices stay logged in."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Successfully logged out\",\n    \"status\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Exchanges the current token for a fresh one. Call it when a request fails with 401 rather than sending the user back to the login screen."
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "forgot-password"
+              ]
+            },
+            "description": "Emails a 6-digit numeric reset token to the given address (if the account exists) for use with Reset Password."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"We have e-mailed your password token\",\n    \"status\": 1\n}"
+            },
+            {
+              "name": "200 — No account with that email",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"User not found!\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"token\": \"123456\",\n    \"password\": \"newPassword456\",\n    \"password_confirmation\": \"newPassword456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reset-password"
+              ]
+            },
+            "description": "Resets the password using the token emailed by Forgot Password.\n\n**Required:** `email`, `token`, `password` (min 6, must be confirmed via `password_confirmation`).\n\nThe token expires after `config('auth.passwords.users.expire')` minutes — an expired or already-used token returns the same \"invalid\" error either way."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Reset password success!\",\n    \"status\": 1\n}"
+            },
+            {
+              "name": "200 — Invalid or expired token",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"This password reset token is invalid.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"101\",\n    \"hash\": \"3582d6ecaf5ef7e1e263b8b71923d658a7bedd3a\",\n    \"expires\": \"1784677254\",\n    \"signature\": \"1dc78987506e7aaa16395ff842c0ea6da696a0f355e85b0de680893521cc9e41\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/email/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "email",
+                "verify"
+              ]
+            },
+            "description": "Confirms the account whose verification email linked here. No Bearer token needed/possible — a freshly-registered mobile user has no way to authenticate until verified, so this proves identity independently via the same id/hash/expires/signature the emailed link's signed URL already carries (`http://.../email/verify/{id}/{hash}?expires=...&signature=...`) — the mobile app just needs to parse those 4 values out of the link/deep-link and POST them here instead of opening it in a browser (which would hit a login wall, since that web route requires a session).\n\nRate-limited to 6 requests/minute, same as the web version."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Email verified successfully.\",\n    \"status\": true\n}"
+            },
+            {
+              "name": "200 — Already verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Your email is already verified.\",\n    \"status\": true\n}"
+            },
+            {
+              "name": "200 — Invalid or tampered link",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"invalid_link\",\n    \"status\": 0,\n    \"message\": \"This verification link is invalid.\"\n}"
+            },
+            {
+              "name": "200 — Expired link",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"link_expired\",\n    \"status\": 0,\n    \"message\": \"This verification link has expired.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/email/resend",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "email",
+                "resend"
+              ]
+            },
+            "description": "Re-sends the verification email/link. Same no-token-needed reasoning as Verify Email — just an `email` lookup, same pattern as Forgot Password. Rate-limited to 6 requests/minute."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Verification link sent.\",\n    \"status\": true\n}"
+            },
+            {
+              "name": "200 — Already verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Your email is already verified.\",\n    \"status\": true\n}"
+            },
+            {
+              "name": "200 — No account with that email",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"User not found!\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Account",
+      "item": [
+        {
+          "name": "Current User (sanctum)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            },
+            "description": "Returns the authenticated user straight from the token guard.\n\nNote this is NOT /auth/me — it is Laravel's default sanctum route and returns the raw user model with no profile shaping. Prefer /auth/me in the app; this is useful for confirming a token is valid."
+          },
+          "response": []
+        },
+        {
+          "name": "Permanently Delete Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/permanently_delete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "permanently_delete"
+              ]
+            },
+            "description": "Irreversibly deletes the account and everything authored by it — services, bookings and media.\n\nGated by the `user_enable_permanently_delete` setting: if that is off, the call does nothing. Also disabled in demo mode."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Media",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Required — the file itself",
+                  "value": null
+                },
+                {
+                  "key": "type",
+                  "value": "image",
+                  "type": "text",
+                  "description": "Optional — defaults to image"
+                },
+                {
+                  "key": "folder_id",
+                  "value": "",
+                  "type": "text",
+                  "description": "Optional — target media folder"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/media/store",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "store"
+              ]
+            },
+            "description": "Uploads a file and returns the media record whose id other endpoints accept (avatars, listing images).\n\nSend as multipart/form-data with the file in `file`. Requires sanctum auth and upload permission on the account."
+          },
+          "response": []
+        }
+      ],
+      "description": "Account-level endpoints that sit outside the login flow. All require a bearer token."
+    },
+    {
+      "name": "Wishlist",
+      "item": [
+        {
+          "name": "List Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/wishlist",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "wishlist"
+              ]
+            },
+            "description": "Paginated (5 per page) list of the authenticated user's wishlisted services, across every service type (tour, event, car, ...). Entries whose underlying service was deleted are silently skipped rather than erroring."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        {\n            \"id\": 12,\n            \"object_id\": 29,\n            \"object_model\": \"tour\",\n            \"service\": {\n                \"id\": 29,\n                \"title\": \"AlUla Heritage Walk with Abdullah\",\n                \"price\": 100,\n                \"sale_price\": null,\n                \"discount_percent\": null,\n                \"image\": \"http://127.0.0.1:8000/uploads/tour.jpg\",\n                \"content\": \"...\",\n                \"location\": { \"id\": 3, \"name\": \"AlUla\" },\n                \"is_featured\": null,\n                \"service_icon\": \"icofont-map-pins\",\n                \"review_score\": { \"score_total\": 0, \"total_review\": 0 },\n                \"service_type\": \"Tour\"\n            }\n        }\n    ],\n    \"total\": 1,\n    \"total_pages\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add to Wishlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/wishlist/tour/29",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "wishlist",
+                "tour",
+                "29"
+              ]
+            },
+            "description": "Adds `{object_model}/{object_id}` (e.g. `tour/29`) to the wishlist. `object_model` must be one of the site's registered bookable service keys (tour, event, car, ...)."
+          },
+          "response": [
+            {
+              "name": "200 — Added",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"class\": \"active\",\n    \"status\": 1\n}"
+            },
+            {
+              "name": "200 — Already in wishlist",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"exists\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Remove from Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/wishlist/tour/29",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "wishlist",
+                "tour",
+                "29"
+              ]
+            },
+            "description": "Removes `{object_model}/{object_id}` from the wishlist."
+          },
+          "response": [
+            {
+              "name": "200 — Removed",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Delete success\",\n    \"status\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Clear Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/wishlist",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "wishlist"
+              ]
+            },
+            "description": "Removes every wishlist entry for the authenticated user in one call."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Booking History",
+      "item": [
+        {
+          "name": "List Booking History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/booking-history?status=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "booking-history"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Optional — filter by booking status (e.g. paid, completed, cancelled). Leave empty for all statuses."
+                }
+              ]
+            },
+            "description": "Paginated booking history for the authenticated user, across every service type they've booked."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        {\n            \"id\": 5,\n            \"code\": \"BK00005\",\n            \"status\": \"paid\",\n            \"service\": { \"title\": \"AlUla Heritage Walk with Abdullah\" },\n            \"service_icon\": \"icofont-map-pins\",\n            \"booking_meta\": {}\n        }\n    ],\n    \"total\": 1,\n    \"max_pages\": 1\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tickets & QR",
+      "item": [
+        {
+          "name": "My Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/ticket",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "ticket"
+              ]
+            },
+            "description": "Tickets belonging to the signed-in customer, across all their bookings."
+          },
+          "response": []
+        },
+        {
+          "name": "My Ticket QR Image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/ticket/qr-image/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "ticket",
+                "qr-image",
+                "1"
+              ]
+            },
+            "description": "The QR image for one of the customer's tickets.\n\nReturns an image, not JSON — render it directly rather than parsing the body."
+          },
+          "response": []
+        },
+        {
+          "name": "Manage Tickets (vendor)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/booking/ticket",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "booking",
+                "ticket"
+              ]
+            },
+            "description": "Tickets sold against the signed-in vendor's own listings — the door list."
+          },
+          "response": []
+        },
+        {
+          "name": "Scan Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"TICKET-CODE-FROM-QR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/user/booking/ticket/scan/1/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "booking",
+                "ticket",
+                "scan",
+                "1",
+                "1"
+              ]
+            },
+            "description": "Marks a ticket as used at the door. Path is /scan/{booking_id}/{ticket_id}.\n\n`code` is the value encoded in the customer's QR and is required — the booking and ticket ids alone are not enough to admit someone.\n\nReturns an error message rather than a 4xx when the code does not match, so check the response body, not just the status."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate QR Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/qr-code?data=https://example.com&size=300",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user",
+                "qr-code"
+              ],
+              "query": [
+                {
+                  "key": "data",
+                  "value": "https://example.com",
+                  "description": "Required — the string to encode"
+                },
+                {
+                  "key": "size",
+                  "value": "300",
+                  "description": "Required — pixel size, numeric"
+                }
+              ]
+            },
+            "description": "Renders any string as a QR image. Both parameters are required; `size` must be numeric.\n\nReturns an image, not JSON."
+          },
+          "response": []
+        }
+      ],
+      "description": "Two sides of the same feature. 'My Tickets' is the customer's own tickets with their QR images. 'Manage Tickets' is the vendor side: the tickets sold against their listings, and the scan endpoint used at the door.\n\nAll endpoints require a bearer token."
+    },
+    {
+      "name": "Content & Discovery",
+      "item": [
+        {
+          "name": "Home Page Layout",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/home-page",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "home-page"
+              ]
+            },
+            "description": "The blocks that make up the home screen, in order, as configured by the admin. Drives what the app renders on launch."
+          },
+          "response": []
+        },
+        {
+          "name": "Services",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/services?limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "services"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Optional — results per service type"
+                }
+              ]
+            },
+            "description": "Every bookable service type this install has enabled (tour, museum, event, car, product...). Use it to build the app's service picker rather than hardcoding the list, so a newly enabled module appears without an app release."
+          },
+          "response": []
+        },
+        {
+          "name": "Locations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/locations?s=&limit=20&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "locations"
+              ],
+              "query": [
+                {
+                  "key": "s",
+                  "value": "",
+                  "description": "Optional — free-text name search"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Optional — per page"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Optional — page number"
+                }
+              ]
+            },
+            "description": "Searchable, paginated list of locations. Accepts the same inputs as the web location search; the response carries total and total_pages."
+          },
+          "response": []
+        },
+        {
+          "name": "Location Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/location/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "location",
+                "1"
+              ]
+            },
+            "description": "One location by id, including its coordinates and translated name."
+          },
+          "response": []
+        },
+        {
+          "name": "News",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/news?s=&cat_id=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "news"
+              ],
+              "query": [
+                {
+                  "key": "s",
+                  "value": "",
+                  "description": "Optional — searches title and content, including translations"
+                },
+                {
+                  "key": "cat_id",
+                  "value": "",
+                  "description": "Optional — filter to a news category id"
+                }
+              ]
+            },
+            "description": "Published news articles, newest first."
+          },
+          "response": []
+        },
+        {
+          "name": "News Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/news/category",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "news",
+                "category"
+              ]
+            },
+            "description": "The category list, for building a news filter."
+          },
+          "response": []
+        },
+        {
+          "name": "News Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/news/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "news",
+                "1"
+              ]
+            },
+            "description": "One article by id, with its full content and tags."
+          },
+          "response": []
+        },
+        {
+          "name": "Countries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/configs/countries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "configs",
+                "countries"
+              ]
+            },
+            "description": "Country list for address and phone-code pickers at checkout."
+          },
+          "response": []
+        }
+      ],
+      "description": "Public content the app needs outside the booking flow: the home screen layout, the service registry, locations, news and the country list. None of these require a token."
+    },
+    {
+      "name": "Tour",
+      "item": [
+        {
+          "name": "Search Tours",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tour/search?location_id=&price_range=0;500&cat_id=&term_id=&review_score=&limit=9&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tour",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "location_id",
+                  "value": "",
+                  "description": "Optional — filter to a location (and its descendants)"
+                },
+                {
+                  "key": "price_range",
+                  "value": "0;500",
+                  "description": "Optional — \"min;max\" in the site's main currency"
+                },
+                {
+                  "key": "cat_id",
+                  "value": "",
+                  "description": "Optional — one or more tour category IDs/slugs"
+                },
+                {
+                  "key": "term_id",
+                  "value": "",
+                  "description": "Optional — attribute term ID"
+                },
+                {
+                  "key": "review_score",
+                  "value": "",
+                  "description": "Optional — one or more minimum review scores"
+                },
+                {
+                  "key": "limit",
+                  "value": "9",
+                  "description": "Optional — defaults to the `tour_page_limit_item` setting, or 9"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated tour listing with filters. Every published tour is included **except**: guide-authored tours (they only ever show on the guide's own public profile page), and tours whose author is blocked or whose plan no longer covers the `tour` module."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"total\": 1,\n    \"total_pages\": 1,\n    \"data\": [\n        {\n            \"id\": 16,\n            \"object_model\": \"tour\",\n            \"title\": \"Sample Tour\",\n            \"price\": 100,\n            \"sale_price\": null,\n            \"discount_percent\": null,\n            \"image\": \"http://127.0.0.1:8000/uploads/tour.jpg\",\n            \"content\": \"...\",\n            \"location\": { \"id\": 3, \"name\": \"AlUla\" },\n            \"is_featured\": null,\n            \"is_wishlist\": 0,\n            \"duration\": \"2 hours\",\n            \"review_score\": { \"score_total\": 0, \"total_review\": 0 }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Tour Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tour/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tour",
+                "filters"
+              ]
+            },
+            "description": "Filter widget definitions for the tour listing page (price range, review score, category tree, attributes) — build the Search Tours filter UI from this rather than hardcoding it client-side."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Filter Price\", \"field\": \"price_range\", \"position\": \"1\", \"min_price\": 0, \"max_price\": 500 },\n        { \"title\": \"Review Score\", \"field\": \"review_score\", \"position\": \"2\", \"min\": \"1\", \"max\": \"5\" },\n        { \"title\": \"Tour Type\", \"field\": \"cat_id\", \"position\": \"3\", \"data\": [] },\n        { \"title\": \"Attributes\", \"field\": \"terms\", \"position\": \"4\", \"data\": [] }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Tour Search Form Fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tour/form-search",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tour",
+                "form-search"
+              ]
+            },
+            "description": "Admin-configured search bar fields for tours (`tour_search_fields` setting), in display order — lets the mobile app render the same search bar fields the admin configured, without hardcoding them."
+          },
+          "response": []
+        },
+        {
+          "name": "Tour Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tour/detail/16",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tour",
+                "detail",
+                "16"
+              ]
+            },
+            "description": "Full tour detail — everything Search Tours returns, plus: reviews (score, stats, list), category, min/max people, FAQs, include/exclude, itinerary, per-person pricing types, extra prices, open hours, booking buyer fees, related tours (same location), and attribute terms.\n\nNo auth required to view — booking it is a separate step (see the Booking folder), which does require a verified, registered account."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 16,\n        \"title\": \"Sample Tour\",\n        \"price\": 100,\n        \"duration\": \"2 hours\",\n        \"review_score\": { \"score_total\": 0, \"total_review\": 0 },\n        \"review_stats\": {},\n        \"review_lists\": [],\n        \"category\": { \"id\": 2, \"name\": \"Heritage\" },\n        \"min_people\": 1,\n        \"max_people\": 10,\n        \"faqs\": [],\n        \"include\": null,\n        \"exclude\": null,\n        \"itinerary\": null,\n        \"person_types\": null,\n        \"enable_open_hours\": 0,\n        \"open_hours\": null,\n        \"booking_fee\": [],\n        \"related\": [],\n        \"terms\": []\n    }\n}"
+            },
+            {
+              "name": "200 — Not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Resource not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Tour Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/tour/availability/16?start=2026-08-01&end=2026-08-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tour",
+                "availability",
+                "16"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-08-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-08-31"
+                }
+              ]
+            },
+            "description": "Bookable dates for this tour within `start`..`end` (both required) — use this to drive a date picker before calling Add to Cart, since Add to Cart will reject a `start_date` this doesn't consider available."
+          },
+          "response": []
+        },
+        {
+          "name": "Write a Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"review_title\": \"Amazing experience!\",\n    \"review_content\": \"Highly recommend this tour, our guide was fantastic.\",\n    \"review_stats\": {\n        \"Service\": 5,\n        \"Organization\": 5,\n        \"Friendliness\": 5,\n        \"Area Expert\": 4,\n        \"Safety\": 5\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/tour/write-review/16",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "tour",
+                "write-review",
+                "16"
+              ]
+            },
+            "description": "Requires the Login Bearer token — unlike the browse endpoints above, this needs an authenticated (registered) user.\n\n**Fields are `review_title` + `review_content`, not `rate_number`/`content`.** This site has `tour_review_stats` configured (Service/Organization/Friendliness/Area Expert/Safety), so a tour review is scored per-category via `review_stats` (object keyed by category title, 1-5 each) — the average becomes the rating. A flat `review_rate` is only used as a fallback when a module has no stat categories configured (see Shop's Write a Review, which has none)."
+          },
+          "response": []
+        }
+      ],
+      "description": "The Tour listing/detail endpoints are generic across every bookable service (`{type}` = tour, car, event, ...), routed through the same `SearchController` — these requests just pin `{type}` to `tour`. None of these require auth; they're public browse/search endpoints."
+    },
+    {
+      "name": "Guide",
+      "item": [
+        {
+          "name": "Search Guides",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/guide/search?location_id=&cat_id=&guide_lang=&price_range=0;500&gender=&guide_type=&tour_type=&age_min=&age_max=&is_available=&free_consultation=&has_discount=&orderby=&limit=9&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guide",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "location_id",
+                  "value": "",
+                  "description": "Optional — only guides linked to a tour at this location (and its descendants)"
+                },
+                {
+                  "key": "cat_id",
+                  "value": "",
+                  "description": "Optional — only guides linked to a tour in this category"
+                },
+                {
+                  "key": "guide_lang",
+                  "value": "",
+                  "description": "Optional — locale code the guide speaks, e.g. \"en\", \"ar\""
+                },
+                {
+                  "key": "price_range",
+                  "value": "0;500",
+                  "description": "Optional — \"min;max\" hourly rate, in the site's main currency"
+                },
+                {
+                  "key": "gender",
+                  "value": "",
+                  "description": "Optional — guide's gender"
+                },
+                {
+                  "key": "guide_type",
+                  "value": "",
+                  "description": "Optional"
+                },
+                {
+                  "key": "tour_type",
+                  "value": "",
+                  "description": "Optional — \"in_person\" or \"virtual\" (a \"both\" guide matches either)"
+                },
+                {
+                  "key": "age_min",
+                  "value": "",
+                  "description": "Optional"
+                },
+                {
+                  "key": "age_max",
+                  "value": "",
+                  "description": "Optional"
+                },
+                {
+                  "key": "is_available",
+                  "value": "",
+                  "description": "Optional — \"1\" to only show currently available guides"
+                },
+                {
+                  "key": "free_consultation",
+                  "value": "",
+                  "description": "Optional — \"1\" to only show guides offering a free consultation"
+                },
+                {
+                  "key": "has_discount",
+                  "value": "",
+                  "description": "Optional — \"1\" to only show discounted guides"
+                },
+                {
+                  "key": "orderby",
+                  "value": "",
+                  "description": "Optional — price_low_high, price_high_low, or rate_high_low (rate isn't scored yet, so this currently falls back to newest)"
+                },
+                {
+                  "key": "limit",
+                  "value": "9"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated guide listing. Only guides with `status: active` are included. `museums_count` is the number of published museums assigned to each guide.\n\n`location_id`/`cat_id`/date filters are museum-scoped (they act on the guides' assigned museums) and are only applied when actually provided — a freshly-approved guide with no museums yet still appears in an unfiltered search. Every other filter (language, price, availability, ...) acts on the guide profile itself."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"total\": 67,\n    \"total_pages\": 34,\n    \"data\": [\n        {\n            \"id\": 72,\n            \"uuid\": \"cd0eb443-d14d-44e1-9b26-95b6b1300560\",\n            \"name\": \"Abdullah Qadri\",\n            \"avatar_url\": \"http://127.0.0.1:8000/themes/mytravel/images/guide-default.jpg\",\n            \"city\": null,\n            \"guide_type\": null,\n            \"tour_type\": null,\n            \"is_available\": true,\n            \"free_consultation\": false,\n            \"has_discount\": false,\n            \"price_per_hour\": \"50.00\",\n            \"display_price_per_hour\": \"$50\",\n            \"languages\": [\"ab\", \"ar\", \"en\"],\n            \"museums_count\": 1,\n            \"detail_url\": \"http://127.0.0.1:8000/guide/cd0eb443-d14d-44e1-9b26-95b6b1300560\"\n        }\n    ],\n    \"status\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Guide Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/guide/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guide",
+                "filters"
+              ]
+            },
+            "description": "Filter widget definitions for the guide listing page (hourly price range across active guides, spoken languages, plus the tour category/location trees and tour attributes used by the tour-scoped filters) — build the Search Guides filter UI from this."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"data\": {\n        \"price_range\": { \"min\": 25, \"max\": 500 },\n        \"languages\": [\n            { \"locale\": \"ar\", \"name\": \"Arabic\" },\n            { \"locale\": \"en\", \"name\": \"English\" },\n            { \"locale\": \"fr\", \"name\": \"French\" }\n        ],\n        \"tour_category\": [\n            { \"id\": 1, \"name\": \"City trips\", \"slug\": \"city-trips\", \"children\": [] }\n        ],\n        \"tour_location\": [\n            { \"id\": 3, \"name\": \"AlUla\", \"children\": [] }\n        ],\n        \"attributes\": []\n    },\n    \"status\": 1\n}"
+            }
+          ]
+        },
+        {
+          "name": "Guide Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/guide/detail/cd0eb443-d14d-44e1-9b26-95b6b1300560",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guide",
+                "detail",
+                "cd0eb443-d14d-44e1-9b26-95b6b1300560"
+              ]
+            },
+            "description": "Full guide profile. Accepts either the numeric `id` or the `uuid` (both work — whichever the app has on hand, e.g. from Search Guides' `id` or the `detail_url`'s slug).\n\nBeyond the Search Guides card fields, adds: `description`, `banner_url`, `year_started_working`, `map` (lat/lng), and `museums`: every published museum assigned to this guide in the admin profile. It also includes `events` (published events authored by the guide before service authoring was withdrawn) and `related_guides` (up to 4 other active guides assigned to at least one of the same museums)."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"data\": {\n        \"id\": 72,\n        \"uuid\": \"cd0eb443-d14d-44e1-9b26-95b6b1300560\",\n        \"name\": \"Abdullah Qadri\",\n        \"avatar_url\": \"http://127.0.0.1:8000/themes/mytravel/images/guide-default.jpg\",\n        \"city\": null,\n        \"guide_type\": null,\n        \"tour_type\": null,\n        \"is_available\": true,\n        \"free_consultation\": false,\n        \"has_discount\": false,\n        \"price_per_hour\": \"50.00\",\n        \"display_price_per_hour\": \"$50\",\n        \"languages\": [\"ab\", \"ar\", \"en\"],\n        \"museums_count\": 1,\n        \"detail_url\": \"http://127.0.0.1:8000/guide/cd0eb443-d14d-44e1-9b26-95b6b1300560\",\n        \"description\": null,\n        \"banner_url\": \"http://127.0.0.1:8000/themes/mytravel/images/guide-default.jpg\",\n        \"year_started_working\": \"2026-07-06T00:00:00.000000Z\",\n        \"map\": null,\n        \"museums\": [\n            {\n                \"id\": 29,\n                \"object_model\": \"museum\",\n                \"title\": \"AlUla Heritage Museum\",\n                \"price\": null,\n                \"sale_price\": null,\n                \"discount_percent\": null,\n                \"image\": null,\n                \"content\": \"...\",\n                \"location\": null,\n                \"is_featured\": 1,\n                \"is_wishlist\": 0,\n                \"duration\": \"\",\n                \"start_time\": null,\n                \"review_score\": { \"score_total\": 0, \"total_review\": 0 }\n            }\n        ],\n        \"events\": [],\n        \"related_guides\": []\n    },\n    \"status\": 1\n}"
+            },
+            {
+              "name": "200 — Not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Guide not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Guide Suggested Services",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/guide/detail/585d7643-1ab1-4b44-b0b3-cbc85c41929c/museums?page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "guide",
+                "detail",
+                "585d7643-1ab1-4b44-b0b3-cbc85c41929c",
+                "museums"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Optional page number. Five suggested services are returned per page."
+                }
+              ]
+            },
+            "description": "Paginated Suggested Services from a guide's public profile. These are the published museums assigned to the guide — the same services displayed in the website's Suggested Services section. The page size is fixed at 5. For a guide with 8 assigned museums, `page=1` returns 5 and `page=2` returns the remaining 3."
+          },
+          "response": [
+            {
+              "name": "200 — Page 1",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"total\": 8,\n    \"total_pages\": 2,\n    \"current_page\": 1,\n    \"per_page\": 5,\n    \"data\": [\n        { \"id\": 4, \"object_model\": \"museum\", \"title\": \"A Journey That Changed History\", \"duration\": \"7 Hours\" },\n        { \"id\": 6, \"object_model\": \"museum\", \"title\": \"Al-Hudaybiyyah Treaty\", \"duration\": \"7 Hours\" },\n        { \"id\": 7, \"object_model\": \"museum\", \"title\": \"From Birth to Revelation\", \"duration\": \"6 Hours\" },\n        { \"id\": 8, \"object_model\": \"museum\", \"title\": \"Hajj Al-Wada\", \"duration\": \"6 Hours\" },\n        { \"id\": 2, \"object_model\": \"museum\", \"title\": \"Road to Makkah\", \"duration\": \"6 Hours\" }\n    ],\n    \"status\": 1\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Browse/search tour guides and view a guide's public profile. Public — no auth required. Review scores are intentionally omitted from these responses: `GuideProfile::getScoreReview()` is a hardcoded stub (`score_total: 0` always) with no real guide-review system behind it yet, so surfacing it here would be misleading."
+    },
+    {
+      "name": "Car",
+      "item": [
+        {
+          "name": "Search Cars",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/search?location_id=&price_range=0;500&term_id=&review_score=&adults=&children=&limit=9&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "car",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "location_id",
+                  "value": "",
+                  "description": "Optional — filter to a location (and its descendants)"
+                },
+                {
+                  "key": "price_range",
+                  "value": "0;500",
+                  "description": "Optional — \"min;max\" in the site's main currency"
+                },
+                {
+                  "key": "term_id",
+                  "value": "",
+                  "description": "Optional — attribute term ID (e.g. car type, features)"
+                },
+                {
+                  "key": "review_score",
+                  "value": "",
+                  "description": "Optional — one or more minimum review scores"
+                },
+                {
+                  "key": "adults",
+                  "value": "",
+                  "description": "Optional — combined with children to filter by the car's max_guests capacity"
+                },
+                {
+                  "key": "children",
+                  "value": "",
+                  "description": "Optional"
+                },
+                {
+                  "key": "limit",
+                  "value": "9",
+                  "description": "Optional — defaults to the `car_page_limit_item` setting, or 9"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated car listing with filters. Uses the same generic `SearchController` as Tour (`{type}=car`) — every published car, sorted/filtered the same way."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"total\": 13,\n    \"total_pages\": 13,\n    \"data\": [\n        {\n            \"id\": 10,\n            \"object_model\": \"car\",\n            \"title\": \"Toyota Prius Plus\",\n            \"price\": 199,\n            \"sale_price\": 0,\n            \"discount_percent\": null,\n            \"image\": \"http://127.0.0.1:8000/uploads/mytravel/car/car-9.jpg\",\n            \"content\": \"...\",\n            \"location\": null,\n            \"is_featured\": 1,\n            \"is_wishlist\": 0,\n            \"passenger\": 9,\n            \"gear\": \"Auto\",\n            \"baggage\": 9,\n            \"door\": 4,\n            \"review_score\": { \"score_total\": \"4.3\", \"total_review\": 3, \"review_text\": \"Very Good\" }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Car Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "car",
+                "filters"
+              ]
+            },
+            "description": "Filter widget definitions for the car listing page (price range, review score, attribute terms like Car Type/Car Features) — build the Search Cars filter UI from this."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Filter Price\", \"field\": \"price_range\", \"position\": \"1\", \"min_price\": 199, \"max_price\": 600 },\n        { \"title\": \"Review Score\", \"field\": \"review_score\", \"position\": \"2\", \"min\": \"1\", \"max\": \"5\" },\n        { \"title\": \"Attributes\", \"field\": \"terms\", \"position\": \"3\", \"data\": [\n            { \"id\": 9, \"name\": \"Car Type\", \"slug\": \"car-type\", \"terms\": [\n                { \"id\": 61, \"name\": \"Convertibles\", \"slug\": \"convertibles\" },\n                { \"id\": 65, \"name\": \"Sedan\", \"slug\": \"sedan\" },\n                { \"id\": 66, \"name\": \"SUVs\", \"slug\": \"suvs\" }\n            ] },\n            { \"id\": 10, \"name\": \"Car Features\", \"slug\": \"car-features\", \"terms\": [\n                { \"id\": 69, \"name\": \"Airbag\", \"slug\": \"airbag\" },\n                { \"id\": 70, \"name\": \"FM Radio\", \"slug\": \"fm-radio\" }\n            ] }\n        ] }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Car Search Form Fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/form-search",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "car",
+                "form-search"
+              ]
+            },
+            "description": "Admin-configured search bar fields for cars (`car_search_fields` setting), in display order."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Location\", \"field\": \"location\", \"size\": \"6\", \"position\": \"1\" },\n        { \"title\": \"From - To\", \"field\": \"date\", \"size\": \"6\", \"position\": \"2\" }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Car Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/detail/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "car",
+                "detail",
+                "1"
+              ]
+            },
+            "description": "Full car detail — everything Search Cars returns, plus: passenger/gear/baggage/door specs, gallery, map, extra add-ons (`extra_price`), reviews, booking buyer fees, related cars (same location), and attribute terms.\n\nNo auth required to view — booking it is a separate step (see the Booking folder), which does require a verified, registered account."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 1,\n        \"object_model\": \"car\",\n        \"title\": \"BMW-X6-facelift\",\n        \"price\": 500,\n        \"sale_price\": 227,\n        \"discount_percent\": \"54%\",\n        \"image\": \"http://127.0.0.1:8000/uploads/mytravel/car/car-1.jpg\",\n        \"content\": \"...\",\n        \"location\": { \"id\": 1, \"name\": \"Mekka\" },\n        \"is_featured\": 0,\n        \"is_wishlist\": 0,\n        \"address\": \"Arrondissement de Paris\",\n        \"map_lat\": \"21.054831\",\n        \"map_lng\": \"105.796077\",\n        \"map_zoom\": 12,\n        \"banner_image\": \"http://127.0.0.1:8000/uploads/mytravel/car/banner-single.jpg\",\n        \"gallery\": [\n            \"http://127.0.0.1:8000/uploads/mytravel/car/gallery-1.jpg\",\n            \"http://127.0.0.1:8000/uploads/mytravel/car/gallery-2.jpg\"\n        ],\n        \"video\": \"https://www.youtube.com/watch?v=UfEiKK-iX70\",\n        \"enable_extra_price\": 1,\n        \"extra_price\": [\n            { \"name\": \"Child Toddler Seat\", \"price\": \"100\", \"type\": \"one_time\" },\n            { \"name\": \"GPS Satellite\", \"price\": \"200\", \"type\": \"one_time\" }\n        ],\n        \"passenger\": 6, \"gear\": \"Auto\", \"baggage\": 4, \"door\": 4,\n        \"review_score\": { \"score_total\": \"4.5\", \"score_text\": \"Excellent\", \"total_review\": 2, \"rate_score\": { \"5\": { \"title\": \"Excellent\", \"total\": 1, \"percent\": 50 }, \"4\": { \"title\": \"Very Good\", \"total\": 1, \"percent\": 50 } } },\n        \"review_stats\": {},\n        \"review_lists\": [],\n        \"faqs\": [],\n        \"is_instant\": 1,\n        \"number\": 4,\n        \"discount_by_days\": null,\n        \"default_state\": 1,\n        \"booking_fee\": [\n            { \"name\": \"Equipment fee\", \"price\": \"100\", \"type\": \"one_time\" },\n            { \"name\": \"Facility fee\", \"price\": \"200\", \"type\": \"one_time\" }\n        ],\n        \"related\": [ { \"id\": 3, \"title\": \"Another car at the same location\" } ],\n        \"terms\": {\n            \"10\": {\n                \"parent\": { \"id\": 10, \"title\": \"Car Features\", \"slug\": \"car-features\", \"service\": \"car\" },\n                \"child\": [\n                    { \"id\": 69, \"title\": \"Airbag\", \"slug\": \"airbag\" },\n                    { \"id\": 70, \"title\": \"FM Radio\", \"slug\": \"fm-radio\" }\n                ]\n            }\n        }\n    }\n}"
+            },
+            {
+              "name": "200 — Not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Resource not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Car Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/car/availability/1?start=2026-08-01&end=2026-08-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "car",
+                "availability",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-08-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-08-31"
+                }
+              ]
+            },
+            "description": "Per-day price/availability for this car within `start`..`end` (both required) — use this to drive the rental date-range picker before Add to Cart, which rejects a `start_date`/`end_date` this doesn't consider available."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    { \"id\": 125, \"active\": 1, \"price\": 227, \"is_instant\": 1, \"is_default\": true, \"price_html\": \"227﷼ x 4\", \"start\": \"2026-08-01\", \"end\": \"2026-08-01\", \"number\": 4 },\n    { \"id\": 556, \"active\": 1, \"price\": 227, \"is_instant\": 1, \"is_default\": true, \"price_html\": \"227﷼ x 4\", \"start\": \"2026-08-02\", \"end\": \"2026-08-02\", \"number\": 4 }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Write a Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"review_title\": \"Great car!\",\n    \"review_content\": \"Clean car, smooth rental process, would rent again.\",\n    \"review_stats\": {\n        \"Equipment\": 5,\n        \"Comfortable\": 5,\n        \"Climate Control\": 4,\n        \"Facility\": 4,\n        \"Aftercare\": 5\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/car/write-review/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "car",
+                "write-review",
+                "1"
+              ]
+            },
+            "description": "Requires the Login Bearer token — unlike the browse endpoints above, this needs an authenticated (registered) user.\n\n**Fields are `review_title` + `review_content`, not `rate_number`/`content`.** This site has `car_review_stats` configured (Equipment/Comfortable/Climate Control/Facility/Aftercare), so a car review is scored per-category via `review_stats` (object keyed by category title, 1-5 each) — the average becomes the rating."
+          },
+          "response": []
+        }
+      ],
+      "description": "The Car listing/detail endpoints reuse the exact same generic `SearchController` as Tour (`{type}` = car) — these requests just pin `{type}` to `car`. None of these require auth; they're public browse/search endpoints.\n\n**Booking a car differs from booking a tour**: instead of a single `start_date` + `guests`, Add to Cart for a car takes a rental **date range** (`start_date` + `end_date`, both `Y-m-d`) plus `number` (how many of this car — defaults to 1). Total is priced per day across the range. See Booking > Add to Cart for the shared endpoint; swap its example body's `service_type` to `\"car\"` and its date fields to this shape."
+    },
+    {
+      "name": "Event",
+      "item": [
+        {
+          "name": "Search Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/event/search?location_id=&price_range=0;2000&term_id=&review_score=&limit=9&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "event",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "location_id",
+                  "value": "",
+                  "description": "Optional — filter to a location (and its descendants)"
+                },
+                {
+                  "key": "price_range",
+                  "value": "0;2000",
+                  "description": "Optional — \"min;max\" in the site's main currency"
+                },
+                {
+                  "key": "term_id",
+                  "value": "",
+                  "description": "Optional — attribute term ID (event type)"
+                },
+                {
+                  "key": "review_score",
+                  "value": "",
+                  "description": "Optional — one or more minimum review scores"
+                },
+                {
+                  "key": "limit",
+                  "value": "9",
+                  "description": "Optional — defaults to the `event_page_limit_item` setting, or 9"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated event listing with filters. Uses the same generic `SearchController` as Tour/Car (`{type}=event`).\n\nExcludes guide-authored events (they only ever show on the guide's own public profile page) and events whose author is blocked or whose plan no longer covers the `event` module — same exclusion rules as Tour."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"total\": 12,\n    \"total_pages\": 12,\n    \"data\": [\n        {\n            \"id\": 12,\n            \"object_model\": \"event\",\n            \"title\": \"Washington, D.C. Highlights\",\n            \"price\": 2100,\n            \"sale_price\": 1554,\n            \"discount_percent\": \"26%\",\n            \"image\": \"http://127.0.0.1:8000/uploads/mytravel/event/event-12.jpg\",\n            \"content\": \"...\",\n            \"location\": null,\n            \"is_featured\": 1,\n            \"is_wishlist\": 0,\n            \"duration\": \"4 Hours\",\n            \"start_time\": \"17:00\",\n            \"review_score\": { \"score_total\": \"4.2\", \"total_review\": 5, \"review_text\": \"Very Good\" }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Event Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/event/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "event",
+                "filters"
+              ]
+            },
+            "description": "Filter widget definitions for the event listing page (price range, review score, event-type attribute terms) — build the Search Events filter UI from this."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Filter Price\", \"field\": \"price_range\", \"position\": \"1\", \"min_price\": 268, \"max_price\": 2000 },\n        { \"title\": \"Review Score\", \"field\": \"review_score\", \"position\": \"2\", \"min\": \"1\", \"max\": \"5\" },\n        { \"title\": \"Attributes\", \"field\": \"terms\", \"position\": \"3\", \"data\": [\n            { \"id\": 11, \"name\": \"Event Type\", \"slug\": \"event-type\", \"terms\": [\n                { \"id\": 75, \"name\": \"Field Day\", \"slug\": \"field-day\" },\n                { \"id\": 76, \"name\": \"Glastonbury\", \"slug\": \"glastonbury\" }\n            ] }\n        ] }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Event Search Form Fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/event/form-search",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "event",
+                "form-search"
+              ]
+            },
+            "description": "Admin-configured search bar fields for events (`event_search_fields` setting), in display order."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Location\", \"field\": \"location\", \"size\": \"6\", \"position\": \"1\" },\n        { \"title\": \"From - To\", \"field\": \"date\", \"size\": \"6\", \"position\": \"2\" }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Event Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/event/detail/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "event",
+                "detail",
+                "1"
+              ]
+            },
+            "description": "Full event detail — everything Search Events returns, plus: `ticket_types` (this event's ticket tiers, code/name/price/number), gallery, map, extra add-ons, reviews, booking buyer fees, related events (same location), and attribute terms.\n\nNo auth required to view — booking it is a separate step (see the Booking folder), which does require a verified, registered account."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 1,\n        \"object_model\": \"event\",\n        \"title\": \"Andante & Allegro Event Design\",\n        \"price\": 2000,\n        \"sale_price\": null,\n        \"discount_percent\": null,\n        \"image\": \"http://127.0.0.1:8000/uploads/mytravel/event/event-1.jpg\",\n        \"content\": \"...\",\n        \"location\": { \"id\": 1, \"name\": \"Mekka\" },\n        \"is_featured\": 0,\n        \"is_wishlist\": 0,\n        \"address\": \"Arrondissement de Paris\",\n        \"map_lat\": \"21.054831\",\n        \"map_lng\": \"105.796077\",\n        \"map_zoom\": 12,\n        \"banner_image\": \"http://127.0.0.1:8000/uploads/mytravel/event/banner-single.jpg\",\n        \"gallery\": [\n            \"http://127.0.0.1:8000/uploads/mytravel/event/gallery-1.jpg\",\n            \"http://127.0.0.1:8000/uploads/mytravel/event/gallery-2.jpg\"\n        ],\n        \"video\": null,\n        \"enable_extra_price\": 1,\n        \"extra_price\": [\n            { \"name\": \"Event service\", \"price\": \"100\", \"type\": \"one_time\" }\n        ],\n        \"duration\": \"6 Hours\",\n        \"start_time\": \"20:00\",\n        \"review_score\": { \"score_total\": \"4.7\", \"score_text\": \"Excellent\", \"total_review\": 3, \"rate_score\": { \"5\": { \"title\": \"Excellent\", \"total\": 2, \"percent\": 67 }, \"4\": { \"title\": \"Very Good\", \"total\": 1, \"percent\": 33 } } },\n        \"review_stats\": {},\n        \"review_lists\": [],\n        \"faqs\": [],\n        \"ticket_types\": [\n            { \"code\": \"ticket_vip\", \"name\": \"Ticket Vip\", \"price\": \"1000\", \"number\": \"10\" },\n            { \"code\": \"ticket_group_tickets\", \"name\": \"Group Tickets\", \"price\": \"500\", \"number\": \"10\" }\n        ],\n        \"is_instant\": 0,\n        \"default_state\": 1,\n        \"booking_fee\": [\n            { \"name\": \"Service fee\", \"price\": \"100\", \"type\": \"one_time\" }\n        ],\n        \"related\": [ { \"id\": 2, \"title\": \"Painted Desert Event Designs\" } ],\n        \"terms\": {\n            \"11\": {\n                \"parent\": { \"id\": 11, \"title\": \"Event Type\", \"slug\": \"event-type\", \"service\": \"event\" },\n                \"child\": [\n                    { \"id\": 75, \"title\": \"Field Day\", \"slug\": \"field-day\" },\n                    { \"id\": 76, \"title\": \"Glastonbury\", \"slug\": \"glastonbury\" }\n                ]\n            }\n        }\n    }\n}"
+            },
+            {
+              "name": "200 — Not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Resource not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Event Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/event/availability/1?start=2026-08-01&end=2026-08-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "event",
+                "availability",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-08-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-08-31"
+                }
+              ]
+            },
+            "description": "Bookable dates within `start`..`end` (both required), each with its own `ticket_types` array (code/name/price/number available, plus `display_price`/`min`/`max`) — use the array **index** of the ticket type you want (0, 1, ...) as the key in Add to Cart's `ticket_types` object, since that's what the booking endpoint matches against."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 437, \"active\": 1, \"price\": 2000, \"start\": \"2026-08-01\", \"end\": \"2026-08-01\",\n        \"ticket_types\": [\n            { \"code\": \"ticket_vip\", \"name\": \"Ticket Vip\", \"price\": \"1000\", \"number\": \"10\", \"display_price\": \"1.000﷼\", \"min\": 0, \"max\": \"10\" },\n            { \"code\": \"ticket_group_tickets\", \"name\": \"Group Tickets\", \"price\": \"500\", \"number\": \"10\", \"display_price\": \"500﷼\", \"min\": 0, \"max\": \"10\" }\n        ],\n        \"title\": \"Ticket Vip: 1.000﷼ x 10<br>Group Tickets: 500﷼ x 10<br>\"\n    }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Write a Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"review_title\": \"Great event!\",\n    \"review_content\": \"Well organized, would attend again.\",\n    \"review_stats\": {\n        \"Service\": 5,\n        \"Organization\": 5,\n        \"Friendliness\": 5,\n        \"Area Expert\": 4,\n        \"Safety\": 5\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/event/write-review/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "event",
+                "write-review",
+                "1"
+              ]
+            },
+            "description": "Requires the Login Bearer token — unlike the browse endpoints above, this needs an authenticated (registered) user.\n\n**Fields are `review_title` + `review_content`, not `rate_number`/`content`.** This site has `event_review_stats` configured (Service/Organization/Friendliness/Area Expert/Safety), so an event review is scored per-category via `review_stats` (object keyed by category title, 1-5 each) — the average becomes the rating."
+          },
+          "response": []
+        }
+      ],
+      "description": "The Event listing/detail endpoints reuse the exact same generic `SearchController` as Tour/Car/Guide (`{type}` = event) — these requests just pin `{type}` to `event`. None of these require auth; they're public browse/search endpoints.\n\n**Booking an event differs from booking a tour/car**: the site currently runs `event_booking_type = \"ticket\"` (an admin setting, could instead be `\"time_slot\"` site-wide), so Add to Cart takes `start_date` (must be one of Event Availability's dates) plus a `ticket_types` object keyed by **array index** into the event's ticket tiers, e.g. `{ \"0\": { \"number\": 2 }, \"1\": { \"number\": 1 } }` to book 2 of ticket_types[0] and 1 of ticket_types[1]. There's no `guests` field — the ticket quantities themselves determine `total_guests`. See Booking > Add to Cart for the shared endpoint."
+    },
+    {
+      "name": "Museum",
+      "item": [
+        {
+          "name": "Search Museums",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/museum/search?location_id=&price_range=0;2000&term_id=&review_score=&limit=9&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "museum",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "location_id",
+                  "value": "",
+                  "description": "Optional — filter to a location (and its descendants)"
+                },
+                {
+                  "key": "price_range",
+                  "value": "0;2000",
+                  "description": "Optional — \"min;max\" in the site's main currency"
+                },
+                {
+                  "key": "term_id",
+                  "value": "",
+                  "description": "Optional — attribute term ID (event type)"
+                },
+                {
+                  "key": "review_score",
+                  "value": "",
+                  "description": "Optional — one or more minimum review scores"
+                },
+                {
+                  "key": "limit",
+                  "value": "9",
+                  "description": "Optional — defaults to the `event_page_limit_item` setting, or 9"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated event listing with filters. Uses the same generic `SearchController` as Tour/Car (`{type}=event`).\n\nExcludes guide-authored events (they only ever show on the guide's own public profile page) and events whose author is blocked or whose plan no longer covers the `event` module — same exclusion rules as Tour."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"total\": 12,\n    \"total_pages\": 12,\n    \"data\": [\n        {\n            \"id\": 12,\n            \"object_model\": \"event\",\n            \"title\": \"Washington, D.C. Highlights\",\n            \"price\": 2100,\n            \"sale_price\": 1554,\n            \"discount_percent\": \"26%\",\n            \"image\": \"http://127.0.0.1:8000/uploads/mytravel/event/event-12.jpg\",\n            \"content\": \"...\",\n            \"location\": null,\n            \"is_featured\": 1,\n            \"is_wishlist\": 0,\n            \"duration\": \"4 Hours\",\n            \"start_time\": \"17:00\",\n            \"review_score\": { \"score_total\": \"4.2\", \"total_review\": 5, \"review_text\": \"Very Good\" }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Museum Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/museum/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "museum",
+                "filters"
+              ]
+            },
+            "description": "Filter widget definitions for the event listing page (price range, review score, event-type attribute terms) — build the Search Events filter UI from this."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Filter Price\", \"field\": \"price_range\", \"position\": \"1\", \"min_price\": 268, \"max_price\": 2000 },\n        { \"title\": \"Review Score\", \"field\": \"review_score\", \"position\": \"2\", \"min\": \"1\", \"max\": \"5\" },\n        { \"title\": \"Attributes\", \"field\": \"terms\", \"position\": \"3\", \"data\": [\n            { \"id\": 11, \"name\": \"Event Type\", \"slug\": \"event-type\", \"terms\": [\n                { \"id\": 75, \"name\": \"Field Day\", \"slug\": \"field-day\" },\n                { \"id\": 76, \"name\": \"Glastonbury\", \"slug\": \"glastonbury\" }\n            ] }\n        ] }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Museum Search Form Fields",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/museum/form-search",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "museum",
+                "form-search"
+              ]
+            },
+            "description": "Admin-configured search bar fields for events (`event_search_fields` setting), in display order."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Location\", \"field\": \"location\", \"size\": \"6\", \"position\": \"1\" },\n        { \"title\": \"From - To\", \"field\": \"date\", \"size\": \"6\", \"position\": \"2\" }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Museum Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/museum/detail/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "museum",
+                "detail",
+                "1"
+              ]
+            },
+            "description": "Full event detail — everything Search Events returns, plus: `ticket_types` (this event's ticket tiers, code/name/price/number), gallery, map, extra add-ons, reviews, booking buyer fees, related events (same location), and attribute terms.\n\nNo auth required to view — booking it is a separate step (see the Booking folder), which does require a verified, registered account."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 1,\n        \"object_model\": \"event\",\n        \"title\": \"Andante & Allegro Event Design\",\n        \"price\": 2000,\n        \"sale_price\": null,\n        \"discount_percent\": null,\n        \"image\": \"http://127.0.0.1:8000/uploads/mytravel/event/event-1.jpg\",\n        \"content\": \"...\",\n        \"location\": { \"id\": 1, \"name\": \"Mekka\" },\n        \"is_featured\": 0,\n        \"is_wishlist\": 0,\n        \"address\": \"Arrondissement de Paris\",\n        \"map_lat\": \"21.054831\",\n        \"map_lng\": \"105.796077\",\n        \"map_zoom\": 12,\n        \"banner_image\": \"http://127.0.0.1:8000/uploads/mytravel/event/banner-single.jpg\",\n        \"gallery\": [\n            \"http://127.0.0.1:8000/uploads/mytravel/event/gallery-1.jpg\",\n            \"http://127.0.0.1:8000/uploads/mytravel/event/gallery-2.jpg\"\n        ],\n        \"video\": null,\n        \"enable_extra_price\": 1,\n        \"extra_price\": [\n            { \"name\": \"Event service\", \"price\": \"100\", \"type\": \"one_time\" }\n        ],\n        \"duration\": \"6 Hours\",\n        \"start_time\": \"20:00\",\n        \"review_score\": { \"score_total\": \"4.7\", \"score_text\": \"Excellent\", \"total_review\": 3, \"rate_score\": { \"5\": { \"title\": \"Excellent\", \"total\": 2, \"percent\": 67 }, \"4\": { \"title\": \"Very Good\", \"total\": 1, \"percent\": 33 } } },\n        \"review_stats\": {},\n        \"review_lists\": [],\n        \"faqs\": [],\n        \"ticket_types\": [\n            { \"code\": \"ticket_vip\", \"name\": \"Ticket Vip\", \"price\": \"1000\", \"number\": \"10\" },\n            { \"code\": \"ticket_group_tickets\", \"name\": \"Group Tickets\", \"price\": \"500\", \"number\": \"10\" }\n        ],\n        \"is_instant\": 0,\n        \"default_state\": 1,\n        \"booking_fee\": [\n            { \"name\": \"Service fee\", \"price\": \"100\", \"type\": \"one_time\" }\n        ],\n        \"related\": [ { \"id\": 2, \"title\": \"Painted Desert Event Designs\" } ],\n        \"terms\": {\n            \"11\": {\n                \"parent\": { \"id\": 11, \"title\": \"Event Type\", \"slug\": \"event-type\", \"service\": \"event\" },\n                \"child\": [\n                    { \"id\": 75, \"title\": \"Field Day\", \"slug\": \"field-day\" },\n                    { \"id\": 76, \"title\": \"Glastonbury\", \"slug\": \"glastonbury\" }\n                ]\n            }\n        }\n    }\n}"
+            },
+            {
+              "name": "200 — Not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Resource not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Museum Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/museum/availability/1?start=2026-08-01&end=2026-08-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "museum",
+                "availability",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-08-01"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-08-31"
+                }
+              ]
+            },
+            "description": "Bookable dates within `start`..`end` (both required), each with its own `ticket_types` array (code/name/price/number available, plus `display_price`/`min`/`max`) — use the array **index** of the ticket type you want (0, 1, ...) as the key in Add to Cart's `ticket_types` object, since that's what the booking endpoint matches against."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 437, \"active\": 1, \"price\": 2000, \"start\": \"2026-08-01\", \"end\": \"2026-08-01\",\n        \"ticket_types\": [\n            { \"code\": \"ticket_vip\", \"name\": \"Ticket Vip\", \"price\": \"1000\", \"number\": \"10\", \"display_price\": \"1.000﷼\", \"min\": 0, \"max\": \"10\" },\n            { \"code\": \"ticket_group_tickets\", \"name\": \"Group Tickets\", \"price\": \"500\", \"number\": \"10\", \"display_price\": \"500﷼\", \"min\": 0, \"max\": \"10\" }\n        ],\n        \"title\": \"Ticket Vip: 1.000﷼ x 10<br>Group Tickets: 500﷼ x 10<br>\"\n    }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Write a Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"review_title\": \"Great event!\",\n    \"review_content\": \"Well organized, would attend again.\",\n    \"review_stats\": {\n        \"Service\": 5,\n        \"Organization\": 5,\n        \"Friendliness\": 5,\n        \"Area Expert\": 4,\n        \"Safety\": 5\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/museum/write-review/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "museum",
+                "write-review",
+                "1"
+              ]
+            },
+            "description": "Requires the Login Bearer token — unlike the browse endpoints above, this needs an authenticated (registered) user.\n\n**Fields are `review_title` + `review_content`, not `rate_number`/`content`.** This site has `event_review_stats` configured (Service/Organization/Friendliness/Area Expert/Safety), so an event review is scored per-category via `review_stats` (object keyed by category title, 1-5 each) — the average becomes the rating."
+          },
+          "response": []
+        }
+      ],
+      "description": "Museums use the same generic {type} endpoints as the other services, so these mirror Event exactly. Museums are ticket-based: /availability returns ticket_types per date, and addToCart expects ticket_types[] rather than a guest count."
+    },
+    {
+      "name": "Shop",
+      "item": [
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/product/search?cat_id[]=&price_range=0;1000&on_sale=&term_id=&limit=9&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "cat_id[]",
+                  "value": "",
+                  "description": "Optional — one or more category ids/slugs"
+                },
+                {
+                  "key": "price_range",
+                  "value": "0;1000",
+                  "description": "Optional — \"min;max\" in the site's main currency"
+                },
+                {
+                  "key": "on_sale",
+                  "value": "",
+                  "description": "Optional — 1 to show only discounted products"
+                },
+                {
+                  "key": "term_id",
+                  "value": "",
+                  "description": "Optional — a single attribute term id"
+                },
+                {
+                  "key": "limit",
+                  "value": "9",
+                  "description": "Optional — defaults to the `product_page_limit_item` setting, or 12"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated Shop listing with filters. Uses the same generic `SearchController` as Tour/Car/Event (`{type}=product`) — no auth required, public browse endpoint.\n\nNo location/date filters here (products aren't location- or date-scoped) — filters are price range, category, on-sale, and a single attribute term."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"total\": 13,\n    \"total_pages\": 7,\n    \"data\": [\n        {\n            \"id\": 22,\n            \"object_model\": \"product\",\n            \"title\": \"تمر عجوة المدينة\",\n            \"price\": 130,\n            \"sale_price\": 110,\n            \"discount_percent\": \"15%\",\n            \"image\": null,\n            \"content\": \"...\",\n            \"is_featured\": true,\n            \"is_wishlist\": 0,\n            \"category\": { \"id\": 6, \"name\": \"أغذية ومأكولات\" },\n            \"sku\": \"DTS-AJW-500\",\n            \"product_type\": \"simple\",\n            \"is_variable\": false,\n            \"stock_status\": \"in\",\n            \"in_stock\": true,\n            \"quantity\": 79,\n            \"max_quantity\": false,\n            \"display_price\": \"110﷼\",\n            \"display_regular_price\": \"130﷼\",\n            \"review_score\": { \"score_total\": 0, \"total_review\": 0, \"review_text\": \"Not rated\" }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Product Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/product/filters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product",
+                "filters"
+              ]
+            },
+            "description": "Filter widget definitions for the Shop listing page (price range, category tree, on-sale toggle, attribute terms) — these are the real filters `Product::search()` supports, matching what the web Shop controller already computes for the same page."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": [\n        { \"title\": \"Filter Price\", \"field\": \"price_range\", \"position\": \"1\", \"min_price\": 45, \"max_price\": 900 },\n        { \"title\": \"Category\", \"field\": \"cat_id\", \"position\": \"2\", \"data\": [\n            { \"id\": 1, \"name\": \"منتج ثقافي\", \"slug\": \"mntg-thkafy\", \"children\": [] },\n            { \"id\": 6, \"name\": \"أغذية ومأكولات\", \"slug\": \"aghdyh-wmakwlat\", \"children\": [] }\n        ] },\n        { \"title\": \"On Sale\", \"field\": \"on_sale\", \"position\": \"3\" },\n        { \"title\": \"Attributes\", \"field\": \"term_id\", \"position\": \"4\", \"data\": [\n            { \"id\": 12, \"name\": \"Size\", \"slug\": \"size\", \"terms\": [\n                { \"id\": 113, \"name\": \"S\", \"slug\": \"s\" },\n                { \"id\": 114, \"name\": \"M\", \"slug\": \"m\" }\n            ] },\n            { \"id\": 13, \"name\": \"Color\", \"slug\": \"color\", \"terms\": [\n                { \"id\": 117, \"name\": \"White\", \"slug\": \"white\" },\n                { \"id\": 118, \"name\": \"Black\", \"slug\": \"black\" }\n            ] }\n        ] }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Product Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/product/detail/16",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product",
+                "detail",
+                "16"
+              ]
+            },
+            "description": "Full product detail. For a **variable** product (`is_variable: true`, shown here) the response includes `variation_attributes` (the option picker: which attributes/terms this product varies by) and `variations` (each variation's own price/stock/sku) — pick terms to find a matching variation, or resolve one via Add to Cart's `term_ids`. A **simple** product (second example) has no `variation_attributes`/`variations` at all; just book its own `price`/`quantity` directly.\n\nNo auth required to view — booking it is a separate step (see the Booking folder), which does require a verified, registered account."
+          },
+          "response": [
+            {
+              "name": "200 — Success (variable product)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 16,\n        \"object_model\": \"product\",\n        \"title\": \"تيشرت مضيف الرسمي\",\n        \"price\": 100,\n        \"sale_price\": 90,\n        \"product_type\": \"variable\",\n        \"is_variable\": true,\n        \"sku\": null,\n        \"in_stock\": true,\n        \"display_price\": \"90﷼\",\n        \"gallery\": [],\n        \"variation_attributes\": [\n            { \"id\": 12, \"name\": \"Size\", \"slug\": \"size\", \"terms\": [\n                { \"id\": 113, \"name\": \"S\" }, { \"id\": 114, \"name\": \"M\" },\n                { \"id\": 115, \"name\": \"L\" }, { \"id\": 116, \"name\": \"XL\" }\n            ] },\n            { \"id\": 13, \"name\": \"Color\", \"slug\": \"color\", \"terms\": [\n                { \"id\": 117, \"name\": \"White\" }, { \"id\": 118, \"name\": \"Black\" }\n            ] }\n        ],\n        \"variations\": [\n            { \"id\": 5, \"term_ids\": [113, 117], \"sku\": \"TSH-S-WHT\", \"price\": 80, \"price_html\": \"80﷼\", \"image_url\": null, \"in_stock\": true, \"quantity\": 15 },\n            { \"id\": 8, \"term_ids\": [116, 117], \"sku\": \"TSH-XL-WHT\", \"price\": 100, \"price_html\": \"100﷼\", \"image_url\": null, \"in_stock\": false, \"quantity\": 0 }\n        ],\n        \"review_score\": { \"score_total\": 0, \"total_review\": 0, \"review_text\": \"Not rated\" },\n        \"related\": []\n    }\n}"
+            },
+            {
+              "name": "200 — Success (simple product)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"data\": {\n        \"id\": 11,\n        \"object_model\": \"product\",\n        \"title\": \"مفتاح الكعبه\",\n        \"price\": 150,\n        \"sale_price\": 100,\n        \"discount_percent\": \"33%\",\n        \"image\": null,\n        \"content\": \"...\",\n        \"is_featured\": true,\n        \"is_wishlist\": 0,\n        \"banner_image\": null,\n        \"video\": null,\n        \"enable_extra_price\": 0,\n        \"extra_price\": null,\n        \"category\": { \"id\": 1, \"name\": \"منتج ثقافي\" },\n        \"sku\": null,\n        \"product_type\": \"simple\",\n        \"is_variable\": false,\n        \"stock_status\": \"in\",\n        \"in_stock\": true,\n        \"quantity\": 50,\n        \"max_quantity\": false,\n        \"display_price\": \"100﷼\",\n        \"display_regular_price\": \"150﷼\",\n        \"gallery\": [],\n        \"specifications\": null,\n        \"faqs\": null,\n        \"review_score\": { \"score_total\": 0, \"score_text\": \"Not rated\", \"total_review\": 0, \"rate_score\": {} },\n        \"review_stats\": [],\n        \"review_lists\": { \"data\": [], \"total\": 0 },\n        \"terms\": null,\n        \"related\": []\n    }\n}"
+            },
+            {
+              "name": "200 — Not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Resource not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Write a Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"review_title\": \"Great product\",\n    \"review_content\": \"Exactly as described, fast delivery.\",\n    \"review_rate\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/product/write-review/16",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "product",
+                "write-review",
+                "16"
+              ]
+            },
+            "description": "Requires the Login Bearer token. Unlike Tour/Car/Event, this site has no `product_review_stats` configured, so a product review takes a flat `review_rate` (1-5) instead of a `review_stats` object — check Shop > Product Filters or the admin settings if that's ever configured, in which case it'd switch to the same per-category shape as Tour."
+          },
+          "response": []
+        }
+      ],
+      "description": "Physical products (\"Shop\" in the storefront UI, `product_route_prefix` setting, default `/shop`). Reuses the generic `SearchController`/`BookingController` (`{type}=product`) — same engine as Tour/Car/Event — but products are the odd one out: no location, no dates/availability, and stock/variations instead of a booking calendar.\n\n**Add to Cart is simpler than every other module**: `{ \"service_id\": 16, \"service_type\": \"product\", \"qty\": 2, \"variation_id\": 5 }` — `variation_id` only applies to a variable product (from Product Detail's `variations` array, or resolve one from picked options via `term_ids: [113, 117]` instead of a known `variation_id`); a simple product only needs `qty`. See Booking > Add to Cart."
+    },
+    {
+      "name": "Booking",
+      "item": [
+        {
+          "name": "Get Configs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/configs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "configs"
+              ]
+            },
+            "description": "App bootstrap config: active languages, every bookable service type + its search form fields, guest-checkout flag, currency, and enabled social logins. No auth required."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment Gateways",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/gateways",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "gateways"
+              ]
+            },
+            "description": "Available payment gateways (logo, name, description, any extra form fields) to render at Checkout. **Requires the Login Bearer token** (not actually public despite how this might read — it isn't in the controller's unauthenticated-route exceptions).\n\n`is_offline` and `supports_cart` matter for the Cart & Checkout folder: only a gateway with `supports_cart: true` (or `is_offline: true`) can be passed as `payment_gateway` to Cart & Checkout's Checkout — anything else is rejected there with a clear error rather than silently failing."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"offline\": {\n        \"logo\": null,\n        \"name\": \"Offline Payment\",\n        \"desc\": \"\",\n        \"is_offline\": true,\n        \"supports_cart\": false\n    },\n    \"moyasar\": {\n        \"logo\": null,\n        \"name\": \"Moyasar\",\n        \"desc\": \"\",\n        \"is_offline\": false,\n        \"supports_cart\": true\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"service_id\": 16,\n    \"service_type\": \"tour\",\n    \"guests\": 1,\n    \"start_date\": \"2026-08-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/booking/addToCart",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "addToCart"
+              ]
+            },
+            "description": "Creates a draft booking and adds it to the cart. Returns `booking_code` on success — pass that as `code` to Checkout.\n\n**Required:** `service_id`, `service_type` (`tour`), `start_date` (`Y-m-d`, must fall within Tour Availability's results), and either `guests` (simple pricing) or `person_types` (if the tour has per-person-type pricing — check Tour Detail's `person_types` field to know which applies). Optional: `extra_price[<key>][enable]` for add-ons the tour offers.\n\nRequires: logged in (registered) **and** verified email — the two things this app now enforces before anyone can book. You can't book your own tour if you happen to be its author.\n\n**Car booking uses a different shape**: instead of a single `start_date` + `guests`/`person_types`, a car's Add to Cart takes a rental **date range** — `start_date` + `end_date` (both `Y-m-d`, must fall within Car Availability's results) — plus `number` (how many of this car, defaults to 1). Just swap `service_type` to `\"car\"` and the body to `{ \"service_id\": 1, \"service_type\": \"car\", \"start_date\": \"2026-09-01\", \"end_date\": \"2026-09-04\", \"number\": 1 }`.\n\n**Event booking uses a different shape too**: this site runs `event_booking_type = \"ticket\"` (an admin setting), so an event's Add to Cart takes `start_date` (must fall within Event Availability's results) plus a `ticket_types` object keyed by **array index** into the event's ticket tiers — e.g. `{ \"service_id\": 1, \"service_type\": \"event\", \"start_date\": \"2026-08-01\", \"ticket_types\": { \"0\": { \"number\": 2 }, \"1\": { \"number\": 1 } } }` to book 2 of ticket_types[0] and 1 of ticket_types[1]. There's no `guests` field — the ticket quantities themselves determine `total_guests`.\n\n**Product (Shop) booking is the simplest of all**: no dates at all — just `{ \"service_id\": 16, \"service_type\": \"product\", \"qty\": 2, \"variation_id\": 5 }`. `variation_id` is required only for a variable product (get it from Product Detail's `variations`, or pass `term_ids: [113, 117]` instead to resolve one from picked options); a simple product just needs `qty`."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"booking_code\": \"BK00012\",\n    \"url\": \"http://127.0.0.1:8000/cart\"\n}"
+            },
+            {
+              "name": "200 — Not verified",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"code\": \"email_not_verified\",\n    \"status\": 0,\n    \"message\": \"Please verify your email address before booking.\"\n}"
+            },
+            {
+              "name": "200 — Date not available",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"This tour is not available at selected dates\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Add Enquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"service_id\": 16,\n    \"service_type\": \"tour\",\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+966500000000\",\n    \"message\": \"Is this tour available for a group of 8?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/booking/addEnquiry",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "addEnquiry"
+              ]
+            },
+            "description": "Sends a pre-booking question to the tour's author, without creating a booking. Same login + verified-email requirement as Add to Cart."
+          },
+          "response": []
+        },
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"BK00012\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"+966500000000\",\n    \"country\": \"SA\",\n    \"term_conditions\": 1,\n    \"payment_gateway\": \"offline\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/booking/doCheckout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "doCheckout"
+              ]
+            },
+            "description": "Completes the draft booking created by Add to Cart.\n\n**Required:** `code` (the `booking_code` from Add to Cart), `first_name`, `last_name`, `email`, `phone`, `country`, `term_conditions`. `payment_gateway` is required unless the booking has a full deposit and wallet credit covers it entirely. Optional: `credit` (wallet credit to apply, capped at the user's balance and the booking total)."
+          },
+          "response": []
+        },
+        {
+          "name": "Booking Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/BK00012",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "BK00012"
+              ]
+            },
+            "description": "Looks up a booking by its code. No auth required (matches the API BookingController's `except` list) — a draft booking returns a 404-style error rather than exposing it."
+          },
+          "response": [
+            {
+              "name": "200 — Not found / still draft",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"Booking not found!\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Checkout Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/BK00012/check-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "BK00012",
+                "check-status"
+              ]
+            },
+            "description": "Polls whether a checkout is done — `error: true` once the booking is no longer `draft` (or doesn't exist), meaning the client should stop polling and redirect."
+          },
+          "response": []
+        },
+        {
+          "name": "Booking — Checkout Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/{{booking_code}}/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "{{booking_code}}",
+                "checkout"
+              ]
+            },
+            "description": "The checkout payload for a draft booking: totals, the buyer form and the available gateways. Call after addToCart and before doCheckout."
+          },
+          "response": []
+        },
+        {
+          "name": "Booking — Thank You",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/{{booking_code}}/thankyou",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "{{booking_code}}",
+                "thankyou"
+              ]
+            },
+            "description": "The post-payment receipt for a booking. This is where the gateway sends the customer back to on success."
+          },
+          "response": []
+        },
+        {
+          "name": "Payment — Confirm Return",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/confirm/offline_payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "confirm",
+                "offline_payment"
+              ]
+            },
+            "description": "The gateway's success return URL. The gateway appends its own query parameters, so treat this as the endpoint the payment provider calls rather than something the app constructs by hand.\n\nReplace `offline_payment` with the gateway in use."
+          },
+          "response": []
+        },
+        {
+          "name": "Payment — Cancel Return",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/booking/cancel/offline_payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking",
+                "cancel",
+                "offline_payment"
+              ]
+            },
+            "description": "The gateway's cancel return URL, for when the customer backs out of payment. The booking stays unpaid and can be retried."
+          },
+          "response": []
+        }
+      ],
+      "description": "Booking a tour is a 2-step flow: **Add to Cart** creates a draft booking, then **Checkout** completes it. Every action here except the read-only ones (Booking Detail, Check Checkout Status, Get Gateways, Get Configs) requires the Login Bearer token — **and now also requires a verified email**, matching the same rule enforced at Login. An unverified account with an otherwise-valid token gets a clear `email_not_verified` error at Add to Cart / Checkout rather than being allowed to proceed.\n\n**For a real multi-item purchase with discount codes, use the Cart & Checkout folder instead** — Checkout here only ever pays for one booking at a time and has no coupon support."
+    },
+    {
+      "name": "Cart & Checkout",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart?coupon_code=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart"
+              ],
+              "query": [
+                {
+                  "key": "coupon_code",
+                  "value": "",
+                  "description": "Optional — preview a discount without applying it (nothing is stored server-side)"
+                }
+              ]
+            },
+            "description": "Your cart is simply your own draft bookings — every Add to Cart call (Tour/Car/Event/Guide.../Shop, all under the Booking folder) already stamps `customer_id`, so there's no separate \"create a cart\" step and no session involved. Add items from any module's Add to Cart, then they show up here regardless of which endpoint added them.\n\nPass `coupon_code` to preview a discount for informational display — it is **not** remembered by the server; pass the same code again at Checkout to actually apply it."
+          },
+          "response": [
+            {
+              "name": "200 — Success (with coupon preview)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"count\": 2,\n    \"subtotal\": 400,\n    \"coupon_code\": \"hello\",\n    \"coupon_message\": \"Coupon code is applied successfully!\",\n    \"discount\": 400,\n    \"total\": 0,\n    \"items\": [\n        {\n            \"id\": 31,\n            \"code\": \"fbda6487d2d65da258db02da76da8746\",\n            \"object_model\": \"tour\",\n            \"object_id\": 16,\n            \"total\": 100,\n            \"total_guests\": 0,\n            \"start_date\": \"2026-09-20 00:00:00\",\n            \"end_date\": \"2026-09-20 01:00:00\",\n            \"meta\": { \"guests\": 1, \"base_price\": 100 },\n            \"service\": { \"id\": 16, \"object_model\": \"tour\", \"title\": \"Tour title\", \"price\": \"100.00\" }\n        },\n        {\n            \"id\": 32,\n            \"code\": \"1d0281167e2007779fc1a1b2c624ce80\",\n            \"object_model\": \"product\",\n            \"object_id\": 11,\n            \"total\": 300,\n            \"total_guests\": 0,\n            \"start_date\": null,\n            \"end_date\": null,\n            \"meta\": { \"qty\": 3 },\n            \"service\": { \"id\": 11, \"object_model\": \"product\", \"title\": \"Product title\", \"price\": 150 }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Apply Coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"coupon_code\": \"hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/cart/coupon/apply",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "coupon",
+                "apply"
+              ]
+            },
+            "description": "Validates a coupon code against the cart's live subtotal (status, expiry date, min/max order total, per-user restriction) and returns the resulting discount. Same as Get Cart's `coupon_code` param, just a dedicated endpoint with a clearer success/error message — nothing is persisted either way, so still pass `coupon_code` again at Checkout."
+          },
+          "response": [
+            {
+              "name": "200 — Applied",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"message\": \"Coupon code is applied successfully!\",\n    \"coupon_code\": \"hello\",\n    \"subtotal\": 400,\n    \"discount\": 400,\n    \"total\": 0\n}"
+            },
+            {
+              "name": "200 — Expired/invalid",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"This coupon code has expired!\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"item_id\": 32,\n    \"qty\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/cart/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "update"
+              ]
+            },
+            "description": "Quantity change for a **product** cart item only (`item_id` is the `id` field from Get Cart's `items`, not the product id) — other item types don't have a quantity to change. `qty: 0` removes the item, same as Remove from Cart. Re-validates stock before saving."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove from Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"item_id\": 32\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/cart/remove",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "remove"
+              ]
+            },
+            "description": "`item_id` is the `id` field from Get Cart's `items` (a booking id, not the tour/car/product id). Deletes the draft booking outright."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"removed\": true\n}"
+            }
+          ]
+        },
+        {
+          "name": "Checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"0500000000\",\n    \"payment_gateway\": \"offline\",\n    \"coupon_code\": \"hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/cart/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "checkout"
+              ]
+            },
+            "description": "Groups **every** item currently in the cart into one order and pays for it in a single transaction (all-or-nothing — if any one item fails its own availability/stock check, nothing is charged). `coupon_code` is optional and, unlike Get Cart's preview, is actually applied and snapshotted onto the order here.\n\n`payment_gateway` must be one of Get Payment Gateways' keys with `is_offline: true` or `supports_cart: true` — anything else is rejected with a clear error rather than silently mis-charging.\n\n**Two different response shapes depending on the gateway:**\n- **Offline** (e.g. `\"offline\"`): the order is paid immediately. `status` comes back `\"processing\"`, the cart is already empty, and there's nothing further to do — fetch the receipt via Order Detail whenever you want it.\n- **Online/redirect** (e.g. `\"moyasar\"`): the order comes back `\"unpaid\"` and a `payment` object is included — open `payment.url` in a webview to let the customer actually pay. The cart is NOT cleared yet (items are parked, not deleted, so they can't be double-checked-out while payment is in flight). You do **not** need to handle `payment.success_url`/`cancel_url` yourselves beyond closing the webview when navigation reaches them — just poll Order Detail afterward for the authoritative status; it lazily re-verifies with the gateway itself while the order is still `unpaid`, so it's correct even if the webview's own redirect never lands."
+          },
+          "response": [
+            {
+              "name": "200 — Success (offline gateway, paid immediately)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"message\": \"Your order has been placed successfully\",\n    \"order_code\": \"2943cb3c-9fd1-469d-9bb9-3c83a398617c\",\n    \"status\": \"processing\",\n    \"subtotal\": 100,\n    \"discount\": 0,\n    \"total\": 100\n}"
+            },
+            {
+              "name": "200 — Success (online gateway, needs payment)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"message\": \"Open the payment page to complete your order\",\n    \"order_code\": \"1a207f93-1795-4fd5-aae5-38b3191c2643\",\n    \"status\": \"unpaid\",\n    \"subtotal\": 100,\n    \"discount\": 0,\n    \"total\": 100,\n    \"payment\": {\n        \"type\": \"redirect\",\n        \"url\": \"https://checkout.moyasar.com/invoices/doc-example-invoice?lang=en\",\n        \"success_url\": \"http://127.0.0.1:8000/cart-order/confirm/moyasar?co=1a207f93-1795-4fd5-aae5-38b3191c2643\",\n        \"cancel_url\": \"http://127.0.0.1:8000/cart-order/cancel/moyasar?co=1a207f93-1795-4fd5-aae5-38b3191c2643\"\n    }\n}"
+            },
+            {
+              "name": "200 — Unsupported gateway for combined cart",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 0,\n    \"message\": \"This payment method cannot be used for a combined cart. Please choose another.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Order Detail (Receipt)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart-order/ed71be61-7f1b-4d32-844f-c1aad735868d",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart-order",
+                "ed71be61-7f1b-4d32-844f-c1aad735868d"
+              ]
+            },
+            "description": "The receipt — the order totals plus every item it grouped (same shape as Get Cart's `items`, but now each one's `total` reflects what it was actually charged, and the items are no longer drafts). Scoped to the logged-in user; another account's order code returns \"Order not found\", not someone else's data.\n\n**If the order was paid through an online gateway, this call is also how you find out it succeeded.** While `order.status` is still `\"unpaid\"`, every call here re-verifies with the gateway itself before responding — so polling this endpoint after closing the payment webview is sufficient even if the webview's own redirect back never actually reached the server. `payment_error` is set (and the items are released back into the cart) if the payment failed or was cancelled instead."
+          },
+          "response": [
+            {
+              "name": "200 — Success (paid via online gateway)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"order\": {\n        \"code\": \"1a207f93-1795-4fd5-aae5-38b3191c2643\",\n        \"status\": \"paid\",\n        \"status_text\": \"Paid\",\n        \"subtotal\": 100,\n        \"discount_amount\": 0,\n        \"coupon_code\": null,\n        \"total\": 100,\n        \"paid\": 100,\n        \"pay_date\": \"2026-08-01T12:08:39.000000Z\",\n        \"currency\": \"sar\",\n        \"gateway\": \"moyasar\",\n        \"payment_error\": null,\n        \"created_at\": \"2026-08-01T12:07:13.000000Z\"\n    },\n    \"items\": [\n        { \"id\": 51, \"object_model\": \"product\", \"total\": 100, \"service\": { \"title\": \"Product title\" } }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "My Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my-orders?limit=15&page=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my-orders"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "15"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Order history — a summary row per order (not the full receipt; call Order Detail with each `code` for that)."
+          },
+          "response": [
+            {
+              "name": "200 — Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": ""
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": 1,\n    \"total\": 1,\n    \"total_pages\": 1,\n    \"data\": [\n        {\n            \"code\": \"ed71be61-7f1b-4d32-844f-c1aad735868d\",\n            \"status\": \"processing\",\n            \"status_text\": \"Processing\",\n            \"total\": 0,\n            \"currency\": \"sar\",\n            \"item_count\": 2,\n            \"created_at\": \"2026-07-22T09:42:01.000000Z\"\n        }\n    ]\n}"
+            }
+          ]
+        }
+      ],
+      "description": "The recommended way to actually complete a purchase — groups everything a customer has added to their cart (from any module's Add to Cart: Tour, Car, Event, Shop, ...) into one combined order with one coupon and one receipt.\n\n**Why this exists as its own folder, separate from Booking's older Checkout**: the web app's cart/coupon state normally lives in a PHP session, which a Bearer-token mobile client can never reach (confirmed directly — Sanctum only starts a session for requests carrying an Origin/Referer header, which a native app never sends, so no session cookie is ever returned). These endpoints instead treat \"the cart\" as simply the customer's own draft bookings and take the coupon code explicitly on each call rather than remembering one server-side — same underlying checkout/discount logic as the web cart, just reached statelessly. Booking's single-item Checkout still works standalone if you ever need to pay for exactly one item outside the cart flow, but it has no discount support and produces its own separate per-item receipt instead of one combined order.\n\n**Online (redirect) gateways are supported here too** (e.g. Moyasar) — not just offline ones. See the Checkout request below for the shape that unlocks: instead of an immediate receipt, you get a `payment.url` to open in a webview. Check Get Payment Gateways' `supports_cart` field to know which gateways can be used for a combined-cart checkout at all."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "device_name",
+      "value": "postman-test-device"
+    },
+    {
+      "key": "booking_code",
+      "value": "BK00012",
+      "description": "A booking code, as returned by addToCart"
+    }
+  ]
+}

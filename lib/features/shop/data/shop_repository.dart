@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/network/api_response_handler.dart';
 import '../models/product_model.dart';
 
 abstract class ShopRepository {
@@ -28,8 +29,7 @@ class ShopRepositoryImpl implements ShopRepository {
           'limit': 12,
         },
       );
-      final data = response.data;
-      final list = data is Map && data['data'] is List ? data['data'] as List : (data is List ? data : []);
+      final list = ApiResponseHandler.extractList(response.data);
       return list.map((e) => ProductModel.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
@@ -40,7 +40,7 @@ class ShopRepositoryImpl implements ShopRepository {
   Future<ProductModel> getProductDetail(dynamic id) async {
     try {
       final response = await _dio.get(ApiEndpoints.productDetail(id));
-      final data = response.data is Map && response.data['data'] != null ? response.data['data'] as Map<String, dynamic> : response.data as Map<String, dynamic>;
+      final data = ApiResponseHandler.getDataOrThrow(response.data, 'لم يتم العثور على بيانات المنتج');
       return ProductModel.fromJson(data);
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
@@ -51,11 +51,8 @@ class ShopRepositoryImpl implements ShopRepository {
   Future<List<Map<String, dynamic>>> getProductFilters() async {
     try {
       final response = await _dio.get(ApiEndpoints.productFilters);
-      final data = response.data;
-      if (data is Map && data['data'] is List) {
-        return (data['data'] as List).whereType<Map<String, dynamic>>().toList();
-      }
-      return [];
+      final list = ApiResponseHandler.extractList(response.data);
+      return list.whereType<Map<String, dynamic>>().toList();
     } on DioException catch (e) {
       throw ServerFailure.fromDioException(e);
     }
